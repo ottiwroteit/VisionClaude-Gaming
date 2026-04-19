@@ -1,30 +1,51 @@
 import SwiftUI
 
-/// Root router. Three states:
+/// Root router. Four states:
 ///   - glasses not registered / not streaming → GlassesSetupView
-///   - streaming + active game selected       → GameSessionView
-///   - streaming + no game selected           → HomeView
+///   - streaming, no game picked              → HomeView
+///   - game picked, no venue confirmed        → VenueSelectView
+///   - venue confirmed, session active        → GameSessionView
 struct ContentView: View {
     @StateObject private var rayBan = RayBanManager()
     @StateObject private var coordinator = GameCoordinator()
-    @State private var selectedGameID: String?
+    @StateObject private var progress = ProgressStore.shared
+    @State private var pickedGameID: String?
+    @State private var sessionGameID: String?
     @State private var hasBootstrapped = false
 
     var body: some View {
         Group {
             if !rayBan.isRegistered || !rayBan.isRunning {
                 GlassesSetupView(rayBan: rayBan)
-            } else if selectedGameID != nil {
+            } else if let id = sessionGameID {
                 GameSessionView(
                     coordinator: coordinator,
                     rayBan: rayBan,
-                    selectedGameID: $selectedGameID
+                    progress: progress,
+                    onExit: {
+                        coordinator.stop()
+                        sessionGameID = nil
+                        pickedGameID = nil
+                    }
+                )
+                .id(id) // Force a fresh session view when game changes.
+            } else if let id = pickedGameID,
+                      let game = coordinator.allGames.first(where: { $0.id == id }) {
+                VenueSelectView(
+                    progress: progress,
+                    game: game,
+                    onStart: { _ in
+                        coordinator.activate(gameID: id)
+                        sessionGameID = id
+                    },
+                    onCancel: { pickedGameID = nil }
                 )
             } else {
                 HomeView(
                     rayBan: rayBan,
                     coordinator: coordinator,
-                    selectedGameID: $selectedGameID
+                    progress: progress,
+                    onPickGame: { pickedGameID = $0 }
                 )
             }
         }

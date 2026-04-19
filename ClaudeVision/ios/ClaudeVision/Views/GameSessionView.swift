@@ -6,7 +6,8 @@ import Combine
 struct GameSessionView: View {
     @ObservedObject var coordinator: GameCoordinator
     @ObservedObject var rayBan: RayBanManager
-    @Binding var selectedGameID: String?
+    @ObservedObject var progress: ProgressStore
+    var onExit: () -> Void
 
     // Flash state — set by the last gesture event and fades within 500ms so
     // every flick/swing gets an anime-style "POW" confirmation.
@@ -19,12 +20,17 @@ struct GameSessionView: View {
         guard let game = activeGame else {
             return AnyView(EmptyView())
         }
+        let venue = progress.currentVenue(for: game.id)
         return AnyView(
             ZStack {
-                Theme.background.ignoresSafeArea()
+                // Venue sits at the very back — the whole session plays
+                // inside the selected environment.
+                venue.background
+                    .ignoresSafeArea()
+                Color.black.opacity(0.35).ignoresSafeArea()
                 Halftone().ignoresSafeArea()
                 VStack(spacing: 16) {
-                    topBar(for: game)
+                    topBar(for: game, venue: venue)
                     scoreRow(for: game)
                     heroContainer(for: game)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -39,6 +45,13 @@ struct GameSessionView: View {
                         .scaleEffect(0.7 + flashOpacity * 0.4)
                         .allowsHitTesting(false)
                         .id(flashKey)
+                }
+
+                if let celebration = progress.pendingCelebration,
+                   celebration.gameID == game.id {
+                    UnlockCelebration(venue: celebration) {
+                        progress.acknowledgeCelebration(celebration)
+                    }
                 }
 
                 if game.isFinished {
@@ -78,12 +91,9 @@ struct GameSessionView: View {
 
     // MARK: - Chrome
 
-    private func topBar(for game: any Game) -> some View {
+    private func topBar(for game: any Game, venue: Venue) -> some View {
         HStack {
-            Button {
-                coordinator.stop()
-                selectedGameID = nil
-            } label: {
+            Button(action: onExit) {
                 HStack(spacing: 4) {
                     Image(systemName: "chevron.left")
                     Text("EXIT").tracking(2)
@@ -96,10 +106,15 @@ struct GameSessionView: View {
                 .rotationEffect(.degrees(-3))
             }
             Spacer()
-            Text(game.title.uppercased())
-                .font(.hype(22))
-                .foregroundColor(Theme.textPrimary)
-                .shadow(color: tint(for: game), radius: 0, x: 2, y: 2)
+            VStack(spacing: 0) {
+                Text(game.title.uppercased())
+                    .font(.hype(20))
+                    .foregroundColor(Theme.textPrimary)
+                    .shadow(color: tint(for: game), radius: 0, x: 2, y: 2)
+                Text("AT \(venue.name.uppercased())")
+                    .font(.hype(10)).tracking(2)
+                    .foregroundColor(Theme.textSecondary)
+            }
             Spacer()
             Button {
                 coordinator.activate(gameID: game.id)
@@ -198,10 +213,7 @@ struct GameSessionView: View {
                         .rotationEffect(.degrees(-2))
                 }
                 .buttonStyle(.plain)
-                Button {
-                    coordinator.stop()
-                    selectedGameID = nil
-                } label: {
+                Button(action: onExit) {
                     Text("EXIT").tracking(3)
                         .font(.hype(16))
                         .foregroundColor(.white)

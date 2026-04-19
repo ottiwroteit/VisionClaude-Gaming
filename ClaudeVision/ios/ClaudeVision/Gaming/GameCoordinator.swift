@@ -12,13 +12,15 @@ final class GameCoordinator: ObservableObject {
     @Published private(set) var lastEventLabel: String = ""
 
     let engine = GestureEngine()
+    let progress: ProgressStore
     private var games: [String: any Game] = [:]
     private var activeGame: (any Game)?
     private var eventSubscription: AnyCancellable?
     private var frameSubscription: AnyCancellable?
     private var activeGameSubscription: AnyCancellable?
 
-    init() {
+    init(progress: ProgressStore = .shared) {
+        self.progress = progress
         eventSubscription = engine.events.sink { [weak self] event in
             guard let self else { return }
             self.lastEventLabel = "\(event.kind.rawValue) \(event.direction.rawValue) m=\(String(format: "%.2f", event.magnitude))"
@@ -35,6 +37,9 @@ final class GameCoordinator: ObservableObject {
     }
 
     func activate(gameID: String) {
+        // Bank any in-progress score before swapping or restarting.
+        bankActiveScore()
+
         activeGame?.reset()
         activeGameSubscription = nil
         activeGame = games[gameID]
@@ -55,10 +60,19 @@ final class GameCoordinator: ObservableObject {
     }
 
     func stop() {
+        bankActiveScore()
         engine.stop()
         activeGame?.reset()
         activeGame = nil
         activeGameID = nil
+    }
+
+    /// Reports the active game's score into ProgressStore, which handles
+    /// unlock detection. Safe to call multiple times — a zero-score game
+    /// won't count.
+    private func bankActiveScore() {
+        guard let game = activeGame, game.score > 0 else { return }
+        progress.reportScore(game.score, for: game.id)
     }
 
     /// Subscribe to a FrameSource's latest-image publisher and pipe frames in.

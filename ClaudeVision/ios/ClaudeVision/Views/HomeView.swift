@@ -5,7 +5,8 @@ import SwiftUI
 struct HomeView: View {
     @ObservedObject var rayBan: RayBanManager
     @ObservedObject var coordinator: GameCoordinator
-    @Binding var selectedGameID: String?
+    @ObservedObject var progress: ProgressStore
+    var onPickGame: (String) -> Void
 
     var body: some View {
         ZStack {
@@ -21,6 +22,12 @@ struct HomeView: View {
                 Spacer(minLength: 0)
             }
             .padding(20)
+
+            if let celebration = progress.pendingCelebration {
+                UnlockCelebration(venue: celebration) {
+                    progress.acknowledgeCelebration(celebration)
+                }
+            }
         }
     }
 
@@ -170,10 +177,15 @@ struct HomeView: View {
             LazyVGrid(columns: columns, spacing: 12) {
                 ForEach(coordinator.allGames, id: \.id) { game in
                     Button {
-                        coordinator.activate(gameID: game.id)
-                        selectedGameID = game.id
+                        onPickGame(game.id)
                     } label: {
-                        GameCard(game: game, ready: rayBan.isRunning)
+                        GameCard(
+                            game: game,
+                            ready: rayBan.isRunning,
+                            venueName: progress.currentVenue(for: game.id).name,
+                            total: progress.total(for: game.id),
+                            nextUnlock: progress.progressToNextUnlock(for: game.id)?.next
+                        )
                     }
                     .buttonStyle(.plain)
                     .disabled(!rayBan.isRunning)
@@ -188,6 +200,9 @@ struct HomeView: View {
 struct GameCard: View {
     let game: any Game
     let ready: Bool
+    let venueName: String
+    let total: Int
+    let nextUnlock: Int?
 
     private var tintColor: Color { Theme.color(for: game.tint) }
 
@@ -208,23 +223,27 @@ struct GameCard: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(game.title.uppercased())
-                    .font(.hype(22))
+                    .font(.hype(20))
                     .foregroundColor(Theme.textPrimary)
                     .lineLimit(2)
                     .shadow(color: tintColor, radius: 0, x: 2, y: 2)
-                Text(game.howToPlay)
-                    .font(.caption2.weight(.semibold))
-                    .foregroundColor(Theme.textSecondary)
-                    .lineLimit(3)
-                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 4) {
+                    Image(systemName: "mappin.circle.fill")
+                        .font(.caption2)
+                    Text(venueName)
+                        .lineLimit(1)
+                }
+                .font(.caption2.weight(.bold))
+                .foregroundColor(tintColor)
             }
             Spacer(minLength: 0)
+            progressBar
             HStack(spacing: 6) {
                 Image(systemName: ready ? "play.fill" : "lock.fill")
                 Text(ready ? "READY" : "LOCKED")
                     .tracking(2)
             }
-            .font(.hype(12))
+            .font(.hype(11))
             .foregroundColor(.black)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
@@ -235,6 +254,36 @@ struct GameCard: View {
         .frame(maxWidth: .infinity, minHeight: 200, alignment: .topLeading)
         .celBorder(tint: tintColor, strokeWidth: ready ? 3 : 1.5)
         .opacity(ready ? 1.0 : 0.7)
+    }
+
+    @ViewBuilder
+    private var progressBar: some View {
+        if let next = nextUnlock {
+            VStack(alignment: .leading, spacing: 3) {
+                HStack {
+                    Text("\(total)").font(.hype(11)).foregroundColor(tintColor)
+                    Text("/ \(next)").font(.hype(11)).foregroundColor(Theme.textSecondary)
+                }
+                GeometryReader { proxy in
+                    ZStack(alignment: .leading) {
+                        Rectangle().fill(Theme.surface).frame(height: 4)
+                        Rectangle()
+                            .fill(tintColor)
+                            .frame(width: proxy.size.width * progressFraction(next: next), height: 4)
+                    }
+                }
+                .frame(height: 4)
+            }
+        } else if total > 0 {
+            Text("ALL UNLOCKED · \(total) PTS")
+                .font(.hype(10)).tracking(2)
+                .foregroundColor(Theme.success)
+        }
+    }
+
+    private func progressFraction(next: Int) -> CGFloat {
+        guard next > 0 else { return 1 }
+        return min(1, max(0, CGFloat(total) / CGFloat(next)))
     }
 
     private var icon: String {
