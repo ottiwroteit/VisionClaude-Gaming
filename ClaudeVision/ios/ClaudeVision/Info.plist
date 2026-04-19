@@ -56,6 +56,61 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
+	<!--
+	  Alternate app icons. Each key must match a pair of PNG files at the
+	  bundle root named AppIcon-<Key>@2x.png (120x120) and @3x.png (180x180).
+	  The files are not in the asset catalog — iOS reads alternate icons
+	  directly from the bundle root. Ship placeholder PNGs or real key art;
+	  the scaffolding is ready either way.
+	-->
+	<key>CFBundleIcons</key>
+	<dict>
+		<key>CFBundleAlternateIcons</key>
+		<dict>
+			<key>Bowling</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array><string>AppIcon-Bowling</string></array>
+				<key>UIPrerenderedIcon</key>
+				<false/>
+			</dict>
+			<key>Tennis</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array><string>AppIcon-Tennis</string></array>
+				<key>UIPrerenderedIcon</key>
+				<false/>
+			</dict>
+			<key>PingPong</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array><string>AppIcon-PingPong</string></array>
+				<key>UIPrerenderedIcon</key>
+				<false/>
+			</dict>
+			<key>Boxing</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array><string>AppIcon-Boxing</string></array>
+				<key>UIPrerenderedIcon</key>
+				<false/>
+			</dict>
+			<key>Archery</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array><string>AppIcon-Archery</string></array>
+				<key>UIPrerenderedIcon</key>
+				<false/>
+			</dict>
+			<key>FruitSlash</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array><string>AppIcon-FruitSlash</string></array>
+				<key>UIPrerenderedIcon</key>
+				<false/>
+			</dict>
+		</dict>
+	</dict>
 	<key>MWDAT</key>
 	<dict>
 		<key>AppLinkURLScheme</key>

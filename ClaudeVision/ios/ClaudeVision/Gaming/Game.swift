@@ -31,6 +31,11 @@ protocol Game: AnyObject, ObservableObject {
     /// engine's defaults. The coordinator applies these before `start()`.
     var preferredThresholds: MotionClassifier.Thresholds? { get }
 
+    /// The venue modifier the game is currently playing under. Written by
+    /// GameCoordinator during `activate()` so `handle()` can adjust scoring,
+    /// difficulty, and behavior on a per-venue basis.
+    var activeModifier: VenueModifier { get set }
+
     func start()
     func reset()
     func handle(_ event: GestureEvent)

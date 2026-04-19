@@ -7,11 +7,21 @@ enum TennisVenues {
             RooftopBG()
         },
         Venue(id: "cherry-park", gameID: "tennis", name: "Cherry Blossom Park",
-              tagline: "Petals drift across the baseline.", unlockAt: 80) {
+              tagline: "Petals drift across the baseline.", unlockAt: 80,
+              modifier: VenueModifier(
+                scoreMultiplier: 1.25,
+                flavorLine: "Tailwind from the petals. +25% points."
+              )) {
             CherryParkBG()
         },
         Venue(id: "grand-arena", gameID: "tennis", name: "Grand Arena",
-              tagline: "Stadium lights. Sold out.", unlockAt: 300) {
+              tagline: "Stadium lights. Sold out.", unlockAt: 300,
+              modifier: VenueModifier(
+                scoreMultiplier: 1.5,
+                difficultyMultiplier: 1.3,
+                flavorLine: "Crowd is loud. Bigger points, stronger CPU.",
+                effect: .crowdPressure
+              )) {
             GrandArenaBG()
         }
     ]

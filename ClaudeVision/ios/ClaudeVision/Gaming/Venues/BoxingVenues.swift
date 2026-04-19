@@ -7,11 +7,22 @@ enum BoxingVenues {
             BackAlleyBG()
         },
         Venue(id: "underground", gameID: "boxing", name: "Underground Ring",
-              tagline: "Smoke. Spotlight. Blood in the air.", unlockAt: 200) {
+              tagline: "Smoke. Spotlight. Blood in the air.", unlockAt: 200,
+              modifier: VenueModifier(
+                scoreMultiplier: 1.25,
+                difficultyMultiplier: 1.3,
+                flavorLine: "Crowd-funded pain. +25% score, faster CPU."
+              )) {
             UndergroundBG()
         },
         Venue(id: "title-fight", gameID: "boxing", name: "Title Fight",
-              tagline: "Packed house. Worldwide broadcast.", unlockAt: 800) {
+              tagline: "Packed house. Worldwide broadcast.", unlockAt: 800,
+              modifier: VenueModifier(
+                scoreMultiplier: 1.5,
+                difficultyMultiplier: 1.5,
+                flavorLine: "Hooks land harder. So do theirs.",
+                effect: .crowdPressure
+              )) {
             TitleFightBG()
         }
     ]

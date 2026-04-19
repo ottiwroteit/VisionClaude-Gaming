@@ -45,6 +45,12 @@ final class GameCoordinator: ObservableObject {
         activeGame = games[gameID]
         activeGameID = gameID
         if let game = activeGame {
+            // Apply the current venue's modifier so the game's handle() can
+            // read scoreMultiplier / difficultyMultiplier / effect. Mutating
+            // via a var binding so Swift lets us set through the existential.
+            var mutable = game
+            mutable.activeModifier = progress.currentVenue(for: gameID).modifier
+
             // Apply the game's preferred classifier thresholds before the
             // engine starts so the first flow sample is classified correctly.
             engine.configure(game.preferredThresholds ?? MotionClassifier.Thresholds())

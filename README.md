@@ -29,6 +29,30 @@ Six built-in games, all sharing one engine:
 
 Adding a seventh game is ~80 lines of Swift — conform to the `Game` protocol, map gestures to actions, and publish state.
 
+## Progression & persistence
+
+- **Venues** — each game has 3 unlockable environments (starter + 2 earned by stacking cumulative score). All 18 are procedural SwiftUI — drop in real key art later without touching layout.
+- **Venue modifiers** — later venues tweak gameplay: Dragon Shrine doubles bowling points, Bamboo Forest adds wind drift to archery, Title Fight amplifies boxing hooks, Heaven's Garden doubles fruit-slice score.
+- **Per-venue high scores** — best single-session per (game, venue), rendered on the carousel cards and the game-over ribbon.
+- **Daily challenge** — deterministic one-a-day across all games, with a +bonus applied to cumulative total on completion.
+- **Share card** — `ImageRenderer` produces a 900×1200 bragging PNG composed of the venue, score burst, and branding; piped through `UIActivityViewController`.
+- **Dev console** — long-press the "GAMING" title on Home to open it. Replays canned gesture scripts into any game, lets you swap app icons, and resets progress.
+
+## App icon
+
+The primary icon lives in `ClaudeVision/Assets.xcassets/AppIcon.appiconset`. Six **alternate** icons (one per game) are scaffolded in `Info.plist` — drop these PNGs at the bundle root to activate them:
+
+```
+AppIcon-Bowling@2x.png     (120×120)   AppIcon-Bowling@3x.png     (180×180)
+AppIcon-Tennis@2x.png      (120×120)   AppIcon-Tennis@3x.png      (180×180)
+AppIcon-PingPong@2x.png    (120×120)   AppIcon-PingPong@3x.png    (180×180)
+AppIcon-Boxing@2x.png      (120×120)   AppIcon-Boxing@3x.png      (180×180)
+AppIcon-Archery@2x.png     (120×120)   AppIcon-Archery@3x.png     (180×180)
+AppIcon-FruitSlash@2x.png  (120×120)   AppIcon-FruitSlash@3x.png  (180×180)
+```
+
+Once present, the dev-console icon picker switches them at runtime via `UIApplication.setAlternateIconName`.
+
 ## Architecture
 
 ```

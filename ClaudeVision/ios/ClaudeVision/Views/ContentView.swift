@@ -15,10 +15,13 @@ struct ContentView: View {
     @State private var sessionGameID: String?
     @State private var devScript: GestureRecorder.Script?
     @State private var hasBootstrapped = false
+    @State private var showingSplash = true
 
     var body: some View {
         Group {
-            if let script = devScript {
+            if showingSplash {
+                LaunchSplashView { showingSplash = false }
+            } else if let script = devScript {
                 // Replay mode: glasses aren't required, scenario drives the game.
                 GameSessionView(
                     coordinator: coordinator,

@@ -7,11 +7,22 @@ enum PingPongVenues {
             BasementBG()
         },
         Venue(id: "tokyo-alley", gameID: "pingpong", name: "Tokyo Alley",
-              tagline: "Lanterns, neon kanji, rain.", unlockAt: 15) {
+              tagline: "Lanterns, neon kanji, rain.", unlockAt: 15,
+              modifier: VenueModifier(
+                difficultyMultiplier: 1.25,
+                flavorLine: "Rain-slick ball. CPU returns faster.",
+                effect: .rainTempo
+              )) {
             TokyoAlleyBG()
         },
         Venue(id: "cyber-arena", gameID: "pingpong", name: "Cyber Arena",
-              tagline: "Grid floor. Holographic crowd.", unlockAt: 60) {
+              tagline: "Grid floor. Holographic crowd.", unlockAt: 60,
+              modifier: VenueModifier(
+                scoreMultiplier: 1.5,
+                difficultyMultiplier: 1.4,
+                flavorLine: "Hyperspeed table. Points worth more, reactions tighter.",
+                effect: .rainTempo
+              )) {
             CyberArenaBG()
         }
     ]

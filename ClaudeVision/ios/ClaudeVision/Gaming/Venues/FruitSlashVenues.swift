@@ -7,11 +7,20 @@ enum FruitSlashVenues {
             KitchenBG()
         },
         Venue(id: "orchard", gameID: "fruitslash", name: "Orchard Sunrise",
-              tagline: "Dew on leaves. First light.", unlockAt: 30) {
+              tagline: "Dew on leaves. First light.", unlockAt: 30,
+              modifier: VenueModifier(
+                scoreMultiplier: 1.3,
+                flavorLine: "Ripe season. +30% per slice."
+              )) {
             OrchardBG()
         },
         Venue(id: "heavens-garden", gameID: "fruitslash", name: "Heaven's Garden",
-              tagline: "Pink clouds. Golden fruit. Divine.", unlockAt: 150) {
+              tagline: "Pink clouds. Golden fruit. Divine.", unlockAt: 150,
+              modifier: VenueModifier(
+                scoreMultiplier: 2.0,
+                flavorLine: "Double points. Miss a fruit and time slows.",
+                effect: .slowMo
+              )) {
             HeavensGardenBG()
         }
     ]

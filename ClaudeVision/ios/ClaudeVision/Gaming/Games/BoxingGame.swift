@@ -23,6 +23,7 @@ final class BoxingGame: ObservableObject, Game {
     @Published private(set) var incomingAttack: IncomingAttack = .none
     @Published private(set) var statusLine: String = "Round 1 — defend and counter"
     @Published private(set) var isFinished: Bool = false
+    var activeModifier: VenueModifier = .default
 
     enum IncomingAttack: String { case none, jab, hookLeft, hookRight, uppercut }
 
@@ -77,8 +78,11 @@ final class BoxingGame: ObservableObject, Game {
     }
 
     private func landPunch(damage: Int, label: String) {
-        cpuHealth = max(0, cpuHealth - damage)
-        score += damage
+        // Crowd pressure venues boost hooks specifically.
+        let crowdBonus = activeModifier.effect == .crowdPressure && label.contains("Hook") ? Int(Double(damage) * 0.4) : 0
+        let boosted = Int(Double(damage + crowdBonus) * activeModifier.scoreMultiplier)
+        cpuHealth = max(0, cpuHealth - boosted)
+        score += boosted
         statusLine = "\(label) lands · CPU \(cpuHealth) HP"
         if cpuHealth == 0 {
             isFinished = true
@@ -99,7 +103,9 @@ final class BoxingGame: ObservableObject, Game {
                 Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { _ in
                     Task { @MainActor [weak self] in
                         guard let self, self.incomingAttack != .none, !self.isFinished else { return }
-                        self.playerHealth = max(0, self.playerHealth - 12)
+                        // CPU hits harder at higher difficulty.
+                        let dmg = Int(Double(12) * self.activeModifier.difficultyMultiplier)
+                        self.playerHealth = max(0, self.playerHealth - dmg)
                         self.statusLine = "Took the \(self.incomingAttack.rawValue) · \(self.playerHealth) HP"
                         self.incomingAttack = .none
                         if self.playerHealth == 0 {

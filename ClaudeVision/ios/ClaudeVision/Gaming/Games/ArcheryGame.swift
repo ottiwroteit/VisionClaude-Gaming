@@ -23,6 +23,7 @@ final class ArcheryGame: ObservableObject, Game {
     @Published private(set) var drawStrength: Float = 0   // 0...1
     @Published private(set) var statusLine: String = "Hold still to draw"
     @Published private(set) var isFinished: Bool = false
+    var activeModifier: VenueModifier = .default
 
     private var drawStart: Date?
     private let maxDraw: TimeInterval = 2.5
@@ -61,16 +62,24 @@ final class ArcheryGame: ObservableObject, Game {
 
     private func fire() {
         guard arrowsLeft > 0 else { return }
-        let strength = drawStrength
-        // Scoring: bullseye if strength is in the sweet spot (0.6–0.9).
-        let delta = abs(strength - 0.75)
-        let points: Int
-        switch delta {
-        case ..<0.1:  points = 10
-        case ..<0.2:  points = 7
-        case ..<0.35: points = 4
-        default:      points = 1
+        var strength = drawStrength
+        // Wind drift: randomly nudges perceived strength so the sweet spot
+        // jitters even when the player nailed the draw.
+        if activeModifier.effect == .windDrift {
+            strength += Float.random(in: -0.12...0.12)
+            strength = max(0, min(1, strength))
         }
+        // High altitude: widens the bullseye band so near-misses still count big.
+        let sweetRadius: Float = activeModifier.effect == .highAltitude ? 0.18 : 0.10
+        let delta = abs(strength - 0.75)
+        let rawPoints: Int
+        switch delta {
+        case ..<sweetRadius:         rawPoints = 10
+        case ..<(sweetRadius + 0.10): rawPoints = 7
+        case ..<(sweetRadius + 0.25): rawPoints = 4
+        default:                      rawPoints = 1
+        }
+        let points = Int(Double(rawPoints) * activeModifier.scoreMultiplier)
         score += points
         arrowsLeft -= 1
         drawStrength = 0

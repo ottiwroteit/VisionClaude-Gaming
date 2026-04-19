@@ -27,6 +27,7 @@ final class TennisGame: ObservableObject, Game {
     @Published private(set) var statusLine: String = "Chin up to serve"
     @Published private(set) var isFinished: Bool = false
     @Published private(set) var rallyCount: Int = 0
+    var activeModifier: VenueModifier = .default
 
     func start() { reset() }
 
@@ -60,7 +61,9 @@ final class TennisGame: ObservableObject, Game {
             }
             rallyCount += 1
             // Probability of winning the point scales with power and alternates returns.
-            let winChance = 0.35 + Double(event.magnitude) * 0.5
+            // Crowd pressure venues subtract a small win-chance penalty.
+            let pressurePenalty = activeModifier.effect == .crowdPressure ? 0.10 : 0.0
+            let winChance = (0.35 + Double(event.magnitude) * 0.5) / activeModifier.difficultyMultiplier - pressurePenalty
             if Double.random(in: 0...1) < winChance {
                 if rallyCount >= Int.random(in: 3...6) {
                     awardPoint(toPlayer: true)
@@ -78,7 +81,8 @@ final class TennisGame: ObservableObject, Game {
 
     private func awardPoint(toPlayer: Bool) {
         if toPlayer {
-            score += 1
+            let points = max(1, Int(activeModifier.scoreMultiplier.rounded()))
+            score += points
             statusLine = "Winner! (\(score))"
         } else {
             statusLine = "CPU wins the point"

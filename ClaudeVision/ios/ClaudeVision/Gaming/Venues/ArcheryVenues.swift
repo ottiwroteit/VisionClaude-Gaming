@@ -7,11 +7,22 @@ enum ArcheryVenues {
             TrainingRangeBG()
         },
         Venue(id: "bamboo-forest", gameID: "archery", name: "Bamboo Forest",
-              tagline: "Green silence. Focus the breath.", unlockAt: 70) {
+              tagline: "Green silence. Focus the breath.", unlockAt: 70,
+              modifier: VenueModifier(
+                scoreMultiplier: 1.4,
+                difficultyMultiplier: 1.3,
+                flavorLine: "Wind through the stalks drifts your arrow.",
+                effect: .windDrift
+              )) {
             BambooForestBG()
         },
         Venue(id: "floating-isle", gameID: "archery", name: "Floating Isle",
-              tagline: "Wind above the clouds.", unlockAt: 250) {
+              tagline: "Wind above the clouds.", unlockAt: 250,
+              modifier: VenueModifier(
+                scoreMultiplier: 1.75,
+                flavorLine: "Thin air, wider target. Generous bullseye.",
+                effect: .highAltitude
+              )) {
             FloatingIsleBG()
         }
     ]

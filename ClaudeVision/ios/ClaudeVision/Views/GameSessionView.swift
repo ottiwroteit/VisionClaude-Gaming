@@ -16,6 +16,9 @@ struct GameSessionView: View {
     @State private var flashOpacity: Double = 0
     @State private var eventSub: AnyCancellable?
 
+    @State private var shareImage: UIImage?
+    @State private var showShareSheet = false
+
     var body: some View {
         guard let game = activeGame else {
             return AnyView(EmptyView())
@@ -66,6 +69,11 @@ struct GameSessionView: View {
             .onDisappear {
                 eventSub = nil
                 progress.clearPendingHighScore()
+            }
+            .sheet(isPresented: $showShareSheet) {
+                if let img = shareImage {
+                    ShareSheet(items: [img])
+                }
             }
         )
     }
@@ -157,16 +165,24 @@ struct GameSessionView: View {
     }
 
     private func coachingPanel(for game: any Game) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "lightbulb.fill")
+        let venue = progress.currentVenue(for: game.id)
+        return HStack(alignment: .top, spacing: 12) {
+            Image(systemName: venue.modifier.flavorLine == nil ? "lightbulb.fill" : "sparkles")
                 .foregroundColor(.black)
                 .padding(6)
                 .background(tint(for: game))
                 .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
-            Text(game.howToPlay)
-                .font(.footnote.weight(.semibold))
-                .foregroundColor(Theme.textPrimary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(game.howToPlay)
+                    .font(.footnote.weight(.semibold))
+                    .foregroundColor(Theme.textPrimary)
+                if let flavor = venue.modifier.flavorLine {
+                    Text(flavor.uppercased())
+                        .font(.hype(10)).tracking(2)
+                        .foregroundColor(tint(for: game))
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(12)
         .celBorder(tint: tint(for: game), strokeWidth: 2)
@@ -224,6 +240,18 @@ struct GameSessionView: View {
                         .rotationEffect(.degrees(-2))
                 }
                 .buttonStyle(.plain)
+                Button(action: { prepareAndShare(for: game) }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "square.and.arrow.up")
+                        Text("SHARE").tracking(3)
+                    }
+                    .font(.hype(16))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 14).padding(.vertical, 10)
+                    .background(Theme.textPrimary)
+                    .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
+                }
+                .buttonStyle(.plain)
                 Button(action: onExit) {
                     Text("EXIT").tracking(3)
                         .font(.hype(16))
@@ -239,6 +267,24 @@ struct GameSessionView: View {
         .background(Theme.background)
         .overlay(Rectangle().stroke(tint(for: game), lineWidth: 4))
         .shadow(color: .black, radius: 0, x: 6, y: 8)
+    }
+
+    private func prepareAndShare(for game: any Game) {
+        let venue = progress.currentVenue(for: game.id)
+        let isRecord = progress.pendingHighScore?.gameID == game.id
+        let card = ShareCardView(
+            gameTitle: game.title,
+            venueName: venue.name,
+            venueTagline: venue.tagline,
+            venueBackground: venue.background,
+            tint: tint(for: game),
+            score: game.score,
+            isNewRecord: isRecord
+        )
+        if let img = ShareCardRenderer.render(card) {
+            shareImage = img
+            showShareSheet = true
+        }
     }
 
     private func newRecordRibbon(flash: ProgressStore.HighScoreFlash, tint: Color) -> some View {

@@ -30,6 +30,7 @@ final class FruitSlashGame: ObservableObject, Game {
     @Published private(set) var currentFruit: Fruit?
     @Published private(set) var statusLine: String = "Flick toward the fruit!"
     @Published private(set) var isFinished: Bool = false
+    var activeModifier: VenueModifier = .default
 
     private var spawnTimer: Timer?
     private var difficulty: Double = 1.0
@@ -65,7 +66,8 @@ final class FruitSlashGame: ObservableObject, Game {
                 score += 2
             }
         } else if matched {
-            score += Int(1 + event.magnitude * 4)
+            let base = Int(1 + event.magnitude * 4)
+            score += Int(Double(base) * activeModifier.scoreMultiplier)
             statusLine = "Slice! \(score)"
         } else {
             lives -= 1

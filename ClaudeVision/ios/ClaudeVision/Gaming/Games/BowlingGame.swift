@@ -24,6 +24,7 @@ final class BowlingGame: ObservableObject, Game {
     @Published private(set) var lastRoll: Int = 0
     @Published private(set) var statusLine: String = "Frame 1 · Ready to bowl"
     @Published private(set) var isFinished: Bool = false
+    var activeModifier: VenueModifier = .default
 
     private let totalFrames = 10
 
@@ -46,7 +47,8 @@ final class BowlingGame: ObservableObject, Game {
         let power = event.magnitude
         let knocked = pinsKnocked(power: power, remaining: pinsRemaining)
         pinsRemaining -= knocked
-        score += knocked
+        let points = Int((Double(knocked) * activeModifier.scoreMultiplier).rounded())
+        score += points
         lastRoll = knocked
 
         let strike = ballInFrame == 1 && knocked == 10
@@ -78,11 +80,15 @@ final class BowlingGame: ObservableObject, Game {
 
     /// Soft physics: low power rolls gutter, mid hits 4-7 pins, high flick is
     /// a strike candidate. Adds a small random jitter so every roll feels
-    /// different without being unfair.
+    /// different without being unfair. Venue modifiers adjust the curve:
+    /// stickyLane forgives weak rolls; higher difficulty = less generous jitter.
     private func pinsKnocked(power: Float, remaining: Int) -> Int {
         let clamped = max(0, min(1, power))
-        let base = Float(remaining) * clamped
-        let jitter = Float.random(in: -1.5...1.5)
+        let sticky = activeModifier.effect == .stickyLane ? Float(0.15) : 0
+        let adjusted = min(1, clamped + sticky)
+        let base = Float(remaining) * adjusted
+        let jitterRange = Float(1.5 / activeModifier.difficultyMultiplier)
+        let jitter = Float.random(in: -jitterRange...jitterRange)
         let raw = Int((base + jitter).rounded())
         return max(0, min(remaining, raw))
     }

@@ -75,6 +75,10 @@ struct DebugPanelView: View {
                             .padding(14)
                             .celBorder(tint: Theme.accent, strokeWidth: 2)
                         }
+
+                        section("App icon", color: Theme.textPrimary) {
+                            iconPicker
+                        }
                     }
                     .padding(20)
                 }
@@ -139,5 +143,54 @@ struct DebugPanelView: View {
 
     private var gameIDs: [String] {
         ["bowling", "tennis", "pingpong", "boxing", "archery", "fruitslash"]
+    }
+
+    @State private var iconError: String?
+    @State private var currentIcon: AppIconManager.Variant = .default
+
+    private var iconPicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if !AppIconManager.isSupported {
+                Text("ALTERNATE ICONS NOT SUPPORTED").tracking(2)
+                    .font(.hype(11)).foregroundColor(Theme.textSecondary)
+            }
+            let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
+            LazyVGrid(columns: columns, spacing: 8) {
+                ForEach(AppIconManager.Variant.allCases) { variant in
+                    Button {
+                        Task { await switchIcon(to: variant) }
+                    } label: {
+                        Text(variant.label.uppercased()).tracking(2)
+                            .font(.hype(11))
+                            .foregroundColor(currentIcon == variant ? .black : Theme.textPrimary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                            .background(currentIcon == variant ? Theme.accent : Theme.surface)
+                            .overlay(Rectangle().stroke(Color.black, lineWidth: 1.5))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            if let err = iconError {
+                Text(err).font(.caption2.weight(.semibold)).foregroundColor(Theme.danger)
+            } else {
+                Text("PNGs required: AppIcon-<Name>@2x.png (120pt) and @3x.png (180pt) at bundle root.")
+                    .font(.caption2).foregroundColor(Theme.textSecondary)
+            }
+        }
+        .padding(14)
+        .celBorder(tint: Theme.textPrimary, strokeWidth: 2)
+        .onAppear { currentIcon = AppIconManager.current }
+    }
+
+    @MainActor
+    private func switchIcon(to variant: AppIconManager.Variant) async {
+        do {
+            try await AppIconManager.set(variant)
+            currentIcon = variant
+            iconError = nil
+        } catch {
+            iconError = "Drop AppIcon-\(variant.rawValue)@2x.png and @3x.png in the bundle first."
+        }
     }
 }

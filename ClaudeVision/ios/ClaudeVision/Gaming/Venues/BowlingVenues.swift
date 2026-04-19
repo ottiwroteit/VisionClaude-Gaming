@@ -7,11 +7,20 @@ enum BowlingVenues {
             NeonLanesBG()
         },
         Venue(id: "sunset-strip", gameID: "bowling", name: "Sunset Strip",
-              tagline: "Palm trees and magenta skies.", unlockAt: 150) {
+              tagline: "Palm trees and magenta skies.", unlockAt: 150,
+              modifier: VenueModifier(
+                flavorLine: "Warm lane oil — weak rolls still knock pins.",
+                effect: .stickyLane
+              )) {
             SunsetStripBG()
         },
         Venue(id: "dragon-shrine", gameID: "bowling", name: "Dragon Shrine",
-              tagline: "Holy ground. Roll with reverence.", unlockAt: 500) {
+              tagline: "Holy ground. Roll with reverence.", unlockAt: 500,
+              modifier: VenueModifier(
+                scoreMultiplier: 2.0,
+                difficultyMultiplier: 1.3,
+                flavorLine: "Sacred lane. Double points, unforgiving pins."
+              )) {
             DragonShrineBG()
         }
     ]

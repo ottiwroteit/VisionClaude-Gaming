@@ -24,11 +24,15 @@ final class PingPongGame: ObservableObject, Game {
     @Published private(set) var rally: Int = 0
     @Published private(set) var statusLine: String = "Rally starts — flick to return"
     @Published private(set) var isFinished: Bool = false
+    var activeModifier: VenueModifier = .default
 
     /// Ping pong is twitch-reflex: we require flicks only, and each return
-    /// has a short time window before the CPU scores.
+    /// has a short time window before the CPU scores. The rainTempo venue
+    /// effect shortens this window.
     private var lastReturn: Date = .distantPast
-    private let returnWindow: TimeInterval = 1.5
+    private var returnWindow: TimeInterval {
+        activeModifier.effect == .rainTempo ? 1.1 : 1.5
+    }
 
     func start() { reset() }
 
@@ -69,7 +73,7 @@ final class PingPongGame: ObservableObject, Game {
         }
 
         if rally >= 6 {
-            score += 1
+            score += max(1, Int(activeModifier.scoreMultiplier.rounded()))
             rally = 0
             statusLine = "Point! \(score) – \(cpuScore)"
             finishIfNeeded()
