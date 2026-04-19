@@ -76,7 +76,8 @@ struct VenueSelectView: View {
                                 venue: venue,
                                 tint: tint,
                                 unlocked: progress.isUnlocked(venue),
-                                isSelected: progress.currentVenue(for: game.id).id == venue.id
+                                isSelected: progress.currentVenue(for: game.id).id == venue.id,
+                                highScore: progress.highScore(gameID: game.id, venueID: venue.id)
                             )
                             .frame(width: proxy.size.width - 80, height: cardHeight)
                             .id(venue.id)
@@ -145,6 +146,7 @@ private struct VenueCard: View {
     let tint: Color
     let unlocked: Bool
     let isSelected: Bool
+    let highScore: Int
 
     var body: some View {
         ZStack {
@@ -185,6 +187,18 @@ private struct VenueCard: View {
                 Spacer()
 
                 VStack(alignment: .leading, spacing: 6) {
+                    if highScore > 0 {
+                        HStack(spacing: 6) {
+                            Image(systemName: "crown.fill")
+                                .foregroundColor(tint)
+                            Text("BEST \(highScore)")
+                                .font(.hype(12)).tracking(2)
+                                .foregroundColor(.white)
+                        }
+                        .padding(.horizontal, 8).padding(.vertical, 4)
+                        .background(Color.black.opacity(0.55))
+                        .overlay(Rectangle().stroke(tint, lineWidth: 1.5))
+                    }
                     Text(venue.name.uppercased())
                         .font(.hype(28))
                         .foregroundColor(.white)

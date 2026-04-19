@@ -1,32 +1,41 @@
 import SwiftUI
 
-/// Root router. Four states:
-///   - glasses not registered / not streaming → GlassesSetupView
-///   - streaming, no game picked              → HomeView
-///   - game picked, no venue confirmed        → VenueSelectView
-///   - venue confirmed, session active        → GameSessionView
+/// Root router.
+///   - Dev scenario active              → GameSessionView in replay mode
+///   - Glasses not registered / streaming → GlassesSetupView
+///   - Game picked, no venue confirmed    → VenueSelectView
+///   - Venue confirmed, session active    → GameSessionView
+///   - Otherwise                          → HomeView
 struct ContentView: View {
     @StateObject private var rayBan = RayBanManager()
     @StateObject private var coordinator = GameCoordinator()
     @StateObject private var progress = ProgressStore.shared
+    @StateObject private var recorder = GestureRecorder()
     @State private var pickedGameID: String?
     @State private var sessionGameID: String?
+    @State private var devScript: GestureRecorder.Script?
     @State private var hasBootstrapped = false
 
     var body: some View {
         Group {
-            if !rayBan.isRegistered || !rayBan.isRunning {
+            if let script = devScript {
+                // Replay mode: glasses aren't required, scenario drives the game.
+                GameSessionView(
+                    coordinator: coordinator,
+                    rayBan: rayBan,
+                    progress: progress,
+                    onExit: exitSession
+                )
+                .id("dev-\(script.id)")
+                .onAppear { runDevScript(script) }
+            } else if !rayBan.isRegistered || !rayBan.isRunning {
                 GlassesSetupView(rayBan: rayBan)
             } else if let id = sessionGameID {
                 GameSessionView(
                     coordinator: coordinator,
                     rayBan: rayBan,
                     progress: progress,
-                    onExit: {
-                        coordinator.stop()
-                        sessionGameID = nil
-                        pickedGameID = nil
-                    }
+                    onExit: exitSession
                 )
                 .id(id) // Force a fresh session view when game changes.
             } else if let id = pickedGameID,
@@ -45,7 +54,8 @@ struct ContentView: View {
                     rayBan: rayBan,
                     coordinator: coordinator,
                     progress: progress,
-                    onPickGame: { pickedGameID = $0 }
+                    onPickGame: { pickedGameID = $0 },
+                    onRunScenario: { devScript = $0 }
                 )
             }
         }
@@ -55,6 +65,19 @@ struct ContentView: View {
             rayBan.cleanup()
             coordinator.stop()
         }
+    }
+
+    private func exitSession() {
+        recorder.stopReplay()
+        coordinator.stop()
+        sessionGameID = nil
+        pickedGameID = nil
+        devScript = nil
+    }
+
+    private func runDevScript(_ script: GestureRecorder.Script) {
+        coordinator.activate(gameID: script.gameID)
+        recorder.replay(script, into: coordinator.engine)
     }
 
     private func bootstrap() {

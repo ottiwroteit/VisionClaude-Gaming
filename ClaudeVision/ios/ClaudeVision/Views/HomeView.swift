@@ -7,15 +7,19 @@ struct HomeView: View {
     @ObservedObject var coordinator: GameCoordinator
     @ObservedObject var progress: ProgressStore
     var onPickGame: (String) -> Void
+    var onRunScenario: (GestureRecorder.Script) -> Void
+
+    @State private var showDebug = false
 
     var body: some View {
         ZStack {
             Theme.background.ignoresSafeArea()
             Halftone().ignoresSafeArea()
 
-            VStack(spacing: 20) {
+            VStack(spacing: 16) {
                 header
                 connectionCard
+                dailyChallenge
                 motionMeter
                 gamesHeader
                 gamesGrid
@@ -28,6 +32,17 @@ struct HomeView: View {
                     progress.acknowledgeCelebration(celebration)
                 }
             }
+        }
+        .sheet(isPresented: $showDebug) {
+            DebugPanelView(
+                progress: progress,
+                onRunScenario: { script in
+                    showDebug = false
+                    onRunScenario(script)
+                },
+                onDismiss: { showDebug = false }
+            )
+            .preferredColorScheme(.dark)
         }
     }
 
@@ -44,6 +59,9 @@ struct HomeView: View {
                     .font(.hype(42))
                     .foregroundColor(Theme.textPrimary)
                     .shadow(color: Theme.accent, radius: 0, x: 3, y: 3)
+                    .onLongPressGesture(minimumDuration: 0.8) {
+                        showDebug = true
+                    }
             }
             Spacer()
             Image(systemName: "eyeglasses")
@@ -107,6 +125,14 @@ struct HomeView: View {
     }
 
     // MARK: - Motion Meter
+
+    private var dailyChallenge: some View {
+        let challenge = progress.todaysChallenge
+        let record = progress.challengeRecord(for: challenge)
+        return DailyChallengeCard(challenge: challenge, record: record) {
+            onPickGame(challenge.gameID)
+        }
+    }
 
     private var motionMeter: some View {
         VStack(alignment: .leading, spacing: 10) {

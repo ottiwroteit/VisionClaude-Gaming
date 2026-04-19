@@ -58,8 +58,15 @@ struct GameSessionView: View {
                     finishedOverlay(for: game)
                 }
             }
-            .onAppear { subscribeToEvents() }
-            .onDisappear { eventSub = nil }
+            .onAppear {
+                subscribeToEvents()
+                // A flash from a prior session shouldn't carry over.
+                progress.clearPendingHighScore()
+            }
+            .onDisappear {
+                eventSub = nil
+                progress.clearPendingHighScore()
+            }
         )
     }
 
@@ -197,9 +204,13 @@ struct GameSessionView: View {
                 .multilineTextAlignment(.center)
                 .shadow(color: tint(for: game), radius: 0, x: 4, y: 4)
             BurstBadge(text: "\(game.score)", tint: tint(for: game), size: 140)
-            Text("FINAL SCORE")
-                .font(.hype(14)).tracking(4)
-                .foregroundColor(Theme.textSecondary)
+            if let flash = progress.pendingHighScore, flash.gameID == game.id {
+                newRecordRibbon(flash: flash, tint: tint(for: game))
+            } else {
+                Text("FINAL SCORE")
+                    .font(.hype(14)).tracking(4)
+                    .foregroundColor(Theme.textSecondary)
+            }
             HStack(spacing: 12) {
                 Button {
                     coordinator.activate(gameID: game.id)
@@ -228,6 +239,21 @@ struct GameSessionView: View {
         .background(Theme.background)
         .overlay(Rectangle().stroke(tint(for: game), lineWidth: 4))
         .shadow(color: .black, radius: 0, x: 6, y: 8)
+    }
+
+    private func newRecordRibbon(flash: ProgressStore.HighScoreFlash, tint: Color) -> some View {
+        VStack(spacing: 4) {
+            Text("NEW RECORD!")
+                .font(.hype(18)).tracking(4)
+                .foregroundColor(.black)
+                .padding(.horizontal, 14).padding(.vertical, 6)
+                .background(tint)
+                .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
+                .rotationEffect(.degrees(-3))
+            Text("PREVIOUS BEST \(flash.previous)")
+                .font(.hype(11)).tracking(3)
+                .foregroundColor(Theme.textSecondary)
+        }
     }
 
     // MARK: - Hero art dispatcher
