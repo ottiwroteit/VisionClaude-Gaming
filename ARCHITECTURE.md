@@ -1,146 +1,136 @@
-# VisionClaw → VisionClaude Architecture Plan
+# Architecture
 
-## Overview
+VisionClaude Gaming is a single-screen iOS app that turns the Meta Ray-Ban camera feed into a motion controller for a catalog of mini-games. This doc explains the pipeline end-to-end.
 
-Retool VisionClaw to replace Gemini Live API + OpenClaw with Claude API + Cowork MCP tools.
+## Layers
 
 ```
-Meta Ray-Ban Glasses (or phone camera)
-       |
-       | video frames + mic audio
-       v
-iOS App (VisionClaude)
-       |
-       | Local STT (Apple Speech) converts audio → text
-       | JPEG frames (~1fps) captured from camera
-       |
-       | HTTP POST /chat  { text, images[], conversation_id }
-       v
-Claude Gateway Server (Node.js, runs on Mac)
-       |
-       |-- Claude Messages API (with vision)
-       |      - Sends text + base64 images
-       |      - Receives text response + tool_use blocks
-       |
-       |-- MCP Tool Router
-       |      - When Claude returns tool_use, invokes MCP servers
-       |      - Slack, Gmail, Calendar, HubSpot, Apollo, etc.
-       |      - Returns tool results back to Claude for final response
-       |
-       v
-Response { text, tool_results[] }
-       |
-       v
-iOS App → AVSpeechSynthesizer (TTS) → Speaker
+┌──────────────────────────────────────────────────────────────┐
+│  Meta Ray-Ban Smart Glasses                                   │
+│  • 30fps camera stream via Meta DAT SDK                       │
+│  • No IMU/motion API available to third-party apps            │
+└──────────────────────────────────────────────────────────────┘
+                        │  BLE + Bonjour (handled by DAT SDK)
+                        ▼
+┌──────────────────────────────────────────────────────────────┐
+│  RayBanManager (Swift, @MainActor)                            │
+│  • Handles Meta AI registration + permission handoff          │
+│  • Subscribes to DAT SDK videoFramePublisher                  │
+│  • Publishes latestImage: UIImage @30fps                      │
+└──────────────────────────────────────────────────────────────┘
+                        │  @Published UIImage?
+                        ▼
+┌──────────────────────────────────────────────────────────────┐
+│  GestureEngine                                                │
+│  • Keeps the previous frame                                   │
+│  • Per pair, runs VNTranslationalImageRegistrationRequest     │
+│  • Emits SIMD2<Float> flow vectors (translation per second)   │
+└──────────────────────────────────────────────────────────────┘
+                        │  MotionClassifier.Sample
+                        ▼
+┌──────────────────────────────────────────────────────────────┐
+│  MotionClassifier                                             │
+│  • State machine: idle → active → resolved                    │
+│  • Accumulates vectors while magnitude > activeThreshold      │
+│  • On dip below threshold, closes out into a GestureEvent:    │
+│      - kind: flick | swing | hold                             │
+│      - direction: up/down/left/right (head-motion frame)      │
+│      - magnitude: normalized 0..1                             │
+│      - duration, peakVelocity                                 │
+└──────────────────────────────────────────────────────────────┘
+                        │  GestureEvent
+                        ▼
+┌──────────────────────────────────────────────────────────────┐
+│  GameCoordinator                                              │
+│  • Owns GestureEngine                                         │
+│  • Registers all Games by id                                  │
+│  • Activates one game at a time; routes events to it          │
+│  • Forwards the active game's objectWillChange                │
+└──────────────────────────────────────────────────────────────┘
+                        │  ObservableObject updates
+                        ▼
+┌──────────────────────────────────────────────────────────────┐
+│  SwiftUI Views                                                │
+│  • ContentView  — three-state router                          │
+│  • GlassesSetupView — pairing + "Start feed"                  │
+│  • HomeView — game picker + motion meter                      │
+│  • GameSessionView — shared chrome + per-game hero art        │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-## Component Breakdown
+## Why optical flow?
 
-### 1. Claude Gateway Server (Node.js)
+Meta Ray-Bans expose video and audio to third-party apps via the DAT SDK, but not the IMU. A "chin flick up" can't be read as a rotation — but when the wearer flicks their chin up, the scene pans *down* in the video feed, and that pan is trivial to detect.
 
-**Location:** `samples/CameraAccess/server/claude-gateway/`
+`VNTranslationalImageRegistrationRequest` from Apple's Vision framework is a perfect match: it's a single-call API that estimates the translation between two images. On a downscaled 240px frame it runs in well under 10ms on modern iPhones, so the pipeline keeps up with the 30fps stream easily.
 
-**Purpose:** Sits on the user's Mac (same network as phone). Accepts requests from the iOS app, orchestrates Claude API calls with vision, and routes tool calls through MCP servers.
+We invert the resulting flow vector to get the wearer's head motion (camera moves, world moves opposite), and feed that into the classifier.
 
-**Endpoints:**
+## The gesture vocabulary
 
-- `POST /chat` — Main conversation endpoint
-  - Body: `{ text: string, images: string[] (base64 JPEG), conversation_id: string }`
-  - Response: `{ text: string, tool_calls: [{ name, result }], conversation_id: string }`
-  - Internally manages message history per conversation_id
-  - Sends images as Claude vision content blocks
-  - Handles tool_use → tool_result loop automatically
+The classifier intentionally exposes a tiny vocabulary. Three kinds × four directions × a magnitude scalar = enough primitives to cover every sport-style game in the catalog.
 
-- `GET /health` — Health check (drop-in compatible with OpenClaw)
+```swift
+enum GestureKind { case flick, swing, hold }
+enum GestureDirection { case up, down, left, right, rollLeft, rollRight, forward, backward, none }
 
-- `POST /config` — Update system prompt, model, etc. at runtime
+struct GestureEvent {
+    let kind: GestureKind
+    let direction: GestureDirection
+    let magnitude: Float
+    let peakVelocity: Float
+    let duration: TimeInterval
+    let vector: SIMD2<Float>
+    let timestamp: Date
+}
+```
 
-**Tech stack:**
-- `@anthropic-ai/sdk` for Claude API
-- `@modelcontextprotocol/sdk` for MCP client
-- Express.js for HTTP server
-- Conversation history stored in-memory (per session)
+`rollLeft`/`rollRight` are reserved for a future upgrade using `VNHomographicImageRegistrationRequest` to pull rotation out of the flow — not wired in the MVP but the games already have slots for it.
 
-**MCP Integration:**
-- Reads MCP server configs from a JSON file (similar to claude_desktop_config.json)
-- Spawns MCP server processes and connects as client
-- When Claude returns `tool_use`, looks up the tool in connected MCP servers and invokes it
-- Returns `tool_result` back to Claude for the final text response
+## The `Game` protocol
 
-**Tool Declaration:**
-- On startup, connects to all configured MCP servers
-- Collects their tool schemas
-- Passes them to Claude as `tools` in the Messages API
-- Claude decides when to call them based on conversation context
+```swift
+@MainActor
+protocol Game: AnyObject, ObservableObject {
+    var id: String { get }
+    var title: String { get }
+    var howToPlay: String { get }
+    var statusLine: String { get }
+    var score: Int { get }
+    var isFinished: Bool { get }
 
-### 2. iOS App Changes
+    func start()
+    func reset()
+    func handle(_ event: GestureEvent)
+}
+```
 
-#### ClaudeConfig.swift (replaces GeminiConfig)
-- `gatewayHost` — Mac's Bonjour hostname (e.g., `http://Matts-Mac.local`)
-- `gatewayPort` — default 18790 (avoids conflict with OpenClaw's 18789)
-- `apiKey` — Anthropic API key (passed to gateway, or gateway has its own)
-- `systemInstruction` — system prompt for Claude
-- `videoFrameInterval` — still ~1fps
-- `videoJPEGQuality` — still 0.5
+Every game is a state machine that:
+1. Observes gesture events
+2. Mutates `@Published` properties
+3. Lets SwiftUI re-render automatically via `objectWillChange`
 
-#### ClaudeBridge.swift (replaces OpenClawBridge)
-- HTTP client that talks to the gateway's `/chat` endpoint
-- Sends text + accumulated images
-- Manages conversation_id for session continuity
-- Simpler than OpenClawBridge — no separate tool routing needed
+Adding a game is ~80–120 lines:
+- Declare state properties with `@Published`
+- Implement `handle(_:)` — a switch over direction + kind
+- Drop a hero-art view into `GameSessionView`'s dispatcher
 
-#### SpeechManager.swift (new)
-- **STT:** Apple Speech framework (`SFSpeechRecognizer`)
-  - Continuous recognition from mic audio
-  - Returns transcribed text in real-time
-  - Handles interim vs final results
-- **TTS:** `AVSpeechSynthesizer`
-  - Speaks Claude's text responses
-  - Supports interruption (user starts talking → stop TTS)
-  - Voice selection (Siri voices for natural sound)
+## Threading model
 
-#### ClaudeSessionViewModel.swift (replaces GeminiSessionViewModel)
-- Orchestrates the full pipeline:
-  1. SpeechManager captures mic → transcribes text
-  2. Camera captures frames → accumulates latest frame
-  3. On speech end (pause detected), sends text + latest frame(s) to ClaudeBridge
-  4. ClaudeBridge calls gateway → Claude responds
-  5. Response text → SpeechManager TTS → speaker
-- Manages session state, transcripts, tool call status
+- **Frame ingestion**: on the main actor (DAT SDK publisher hops to main).
+- **Optical flow**: dispatched to a background queue (`gesture.flow`) so the 30fps stream never blocks the UI.
+- **Gesture classification + game state**: back on the main actor for SwiftUI.
 
-#### AudioManager.swift changes
-- Simplified: no longer sends raw PCM to WebSocket
-- Still handles audio session setup (voiceChat/videoChat modes)
-- Still handles interruption recovery
-- Mic audio goes to SpeechManager for STT instead of Gemini
+## Tuning knobs
 
-### 3. What Stays the Same
+`MotionClassifier.Thresholds` exposes the full calibration surface:
 
-- **Camera pipeline** — DAT SDK video stream + iPhone camera mode unchanged
-- **WebRTC streaming** — Live POV sharing to browser stays as-is
-- **Views** — Mostly same UI, just wired to ClaudeSessionViewModel
-- **Settings UI** — Updated labels (Claude Gateway instead of OpenClaw)
+```swift
+stillThreshold:   0.004  // below this, user is still
+activeThreshold:  0.012  // above this, a gesture has started
+flickMaxDuration: 0.28   // longer = swing, shorter = flick
+minHoldDuration:  0.4    // how long to stay still before emitting a hold
+axisDominance:    1.6    // how much one axis must beat the other
+```
 
-## Key Design Decisions
-
-### Why local STT/TTS instead of streaming audio?
-Claude doesn't have a real-time WebSocket audio API like Gemini Live. The trade-off is slightly higher latency (STT → API call → TTS vs. native audio streaming), but we get Claude's superior reasoning, vision, and tool ecosystem. Apple's on-device speech recognition is fast (~200ms) and the API call adds ~1-2s, so total latency should be 2-4s.
-
-### Why a gateway server instead of direct API calls from iOS?
-1. MCP servers run as local processes — can't spawn them on iOS
-2. Keeps the API key on the Mac, not on the phone
-3. Gateway can manage complex tool_use → tool_result loops
-4. Easy to add more MCP servers without app changes
-5. Same gateway can serve Android app later
-
-### Why not keep Gemini for audio + use Claude for tools?
-Simpler architecture with one AI backend. Avoids coordinating two AI systems. Claude's vision is excellent and system prompts give consistent behavior across voice and tool interactions.
-
-## Migration Path
-
-1. Build gateway server first (can test with curl)
-2. Add SpeechManager to iOS app
-3. Create ClaudeBridge + ClaudeSessionViewModel
-4. Wire up to existing views
-5. Test end-to-end
-6. Keep Gemini code in place (feature flag) for A/B comparison
+These can be tweaked per-game by calling `coordinator.engine.configure(...)` before activation.

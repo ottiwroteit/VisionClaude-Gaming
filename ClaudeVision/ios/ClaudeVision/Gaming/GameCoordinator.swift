@@ -42,7 +42,7 @@ final class GameCoordinator: ObservableObject {
         if let game = activeGame {
             // Forward the game's state changes so SwiftUI views observing the
             // coordinator re-render when score/statusLine/isFinished change.
-            activeGameSubscription = game.objectWillChange.sink { [weak self] _ in
+            activeGameSubscription = game.changes.sink { [weak self] _ in
                 self?.objectWillChange.send()
             }
             game.start()
