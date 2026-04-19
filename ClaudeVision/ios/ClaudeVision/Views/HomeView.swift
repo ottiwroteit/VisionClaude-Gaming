@@ -10,6 +10,7 @@ struct HomeView: View {
     var body: some View {
         ZStack {
             Theme.background.ignoresSafeArea()
+            Halftone().ignoresSafeArea()
 
             VStack(spacing: 20) {
                 header
@@ -27,16 +28,22 @@ struct HomeView: View {
 
     private var header: some View {
         HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: -4) {
                 Text("VisionClaude")
-                    .font(.caption).foregroundColor(Theme.textSecondary)
-                Text("Gaming")
-                    .font(.largeTitle.bold()).foregroundColor(Theme.textPrimary)
+                    .font(.hype(14))
+                    .foregroundColor(Theme.accent)
+                    .tracking(4)
+                Text("GAMING")
+                    .font(.hype(42))
+                    .foregroundColor(Theme.textPrimary)
+                    .shadow(color: Theme.accent, radius: 0, x: 3, y: 3)
             }
             Spacer()
             Image(systemName: "eyeglasses")
-                .font(.title2)
+                .font(.title)
                 .foregroundColor(Theme.accent)
+                .padding(10)
+                .background(Circle().stroke(Theme.accent, lineWidth: 2))
         }
     }
 
@@ -45,28 +52,45 @@ struct HomeView: View {
     private var connectionCard: some View {
         HStack(spacing: 14) {
             ZStack {
-                Circle().fill(Theme.surfaceStrong).frame(width: 44, height: 44)
+                Circle()
+                    .fill(rayBan.isRunning ? Theme.success.opacity(0.2) : Theme.surfaceStrong)
+                    .frame(width: 44, height: 44)
+                Circle().stroke(rayBan.isRunning ? Theme.success : Theme.stroke, lineWidth: 2)
+                    .frame(width: 44, height: 44)
                 Image(systemName: rayBan.isRunning ? "dot.radiowaves.left.and.right" : "eyeglasses.slash")
                     .foregroundColor(rayBan.isRunning ? Theme.success : Theme.textSecondary)
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text(rayBan.isRunning ? "Glasses streaming" : rayBan.glassesName)
-                    .font(.subheadline.bold()).foregroundColor(Theme.textPrimary)
+                Text(rayBan.isRunning ? "LINKED" : "OFFLINE")
+                    .font(.hype(16)).foregroundColor(Theme.textPrimary)
+                    .tracking(2)
                 Text(subtitle)
                     .font(.caption).foregroundColor(Theme.textSecondary)
             }
             Spacer()
             if rayBan.isRunning {
-                Button("Stop") { rayBan.stop() }
-                    .font(.caption.bold())
-                    .foregroundColor(Theme.danger)
+                actionChip(label: "STOP", tint: Theme.danger) { rayBan.stop() }
             } else {
-                Button("Start") { try? rayBan.start() }
-                    .font(.caption.bold())
-                    .foregroundColor(Theme.accent)
+                actionChip(label: "START", tint: Theme.accent) { try? rayBan.start() }
             }
         }
-        .cardStyle()
+        .padding(14)
+        .celBorder(tint: rayBan.isRunning ? Theme.success : Theme.accent)
+    }
+
+    private func actionChip(label: String, tint: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(.hype(13))
+                .tracking(2)
+                .foregroundColor(.black)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
+                .background(tint)
+                .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
+                .rotationEffect(.degrees(-2))
+        }
+        .buttonStyle(.plain)
     }
 
     private var subtitle: String {
@@ -78,37 +102,65 @@ struct HomeView: View {
     // MARK: - Motion Meter
 
     private var motionMeter: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Motion")
-                    .font(.caption.bold()).foregroundColor(Theme.textSecondary)
+                Text("MOTION")
+                    .font(.hype(14)).tracking(3)
+                    .foregroundColor(Theme.accent)
                 Spacer()
-                Text(coordinator.lastEventLabel.isEmpty ? "idle" : coordinator.lastEventLabel)
-                    .font(.caption2).foregroundColor(Theme.textSecondary)
+                Text(coordinator.lastEventLabel.isEmpty ? "idle" : coordinator.lastEventLabel.uppercased())
+                    .font(.caption2.bold()).foregroundColor(Theme.textSecondary)
                     .lineLimit(1).truncationMode(.tail)
             }
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Theme.surface)
-                    Capsule()
-                        .fill(Theme.accent)
-                        .frame(width: min(proxy.size.width, CGFloat(coordinator.engine.liveMagnitude) * proxy.size.width))
+                    Rectangle().fill(Theme.surface)
+                    // Chunky segmented fill — reads as energy bar, not progress bar.
+                    let segments = 18
+                    let magnitude = min(1.0, CGFloat(coordinator.engine.liveMagnitude))
+                    let filled = Int(magnitude * CGFloat(segments))
+                    HStack(spacing: 2) {
+                        ForEach(0..<segments, id: \.self) { i in
+                            Rectangle()
+                                .fill(i < filled ? segmentColor(index: i, filled: filled) : Theme.surface)
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
                 }
+                .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
             }
-            .frame(height: 6)
+            .frame(height: 14)
         }
-        .cardStyle()
+        .padding(14)
+        .celBorder(tint: Theme.accent)
+    }
+
+    private func segmentColor(index: Int, filled: Int) -> Color {
+        let ratio = Double(index) / 18.0
+        if ratio < 0.5 { return Theme.accent }
+        if ratio < 0.8 { return Theme.success }
+        return Theme.danger
     }
 
     // MARK: - Games
 
     private var gamesHeader: some View {
-        HStack {
-            Text("Pick a game")
-                .font(.title3.bold()).foregroundColor(Theme.textPrimary)
+        HStack(alignment: .lastTextBaseline) {
+            Text("CHOOSE")
+                .font(.hype(26)).foregroundColor(Theme.textPrimary)
+                .tracking(3)
+            Text("YOUR BATTLE")
+                .font(.hype(26)).foregroundColor(Theme.accent)
+                .tracking(3)
             Spacer()
             Text("\(coordinator.allGames.count)")
-                .font(.caption).foregroundColor(Theme.textSecondary)
+                .font(.hype(24))
+                .foregroundColor(Theme.textPrimary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(Rectangle().fill(Theme.accent))
+                .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
+                .rotationEffect(.degrees(-4))
         }
     }
 
@@ -125,7 +177,6 @@ struct HomeView: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(!rayBan.isRunning)
-                    .opacity(rayBan.isRunning ? 1.0 : 0.55)
                 }
             }
         }
@@ -142,37 +193,48 @@ struct GameCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Image(systemName: icon)
-                .font(.title)
-                .foregroundColor(tintColor)
-                .frame(width: 44, height: 44)
-                .background(
-                    Circle().fill(tintColor.opacity(0.18))
-                        .overlay(Circle().stroke(tintColor.opacity(0.4), lineWidth: 1))
-                )
-            VStack(alignment: .leading, spacing: 4) {
-                Text(game.title)
-                    .font(.headline).foregroundColor(Theme.textPrimary)
-                    .lineLimit(1)
+            // Icon block — thick square with hard shadow behind.
+            ZStack {
+                Rectangle()
+                    .fill(tintColor)
+                    .frame(width: 54, height: 54)
+                    .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
+                Image(systemName: icon)
+                    .font(.system(size: 28, weight: .black))
+                    .foregroundColor(.black)
+            }
+            .rotationEffect(.degrees(-4))
+            .shadow(color: .black, radius: 0, x: 3, y: 4)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(game.title.uppercased())
+                    .font(.hype(22))
+                    .foregroundColor(Theme.textPrimary)
+                    .lineLimit(2)
+                    .shadow(color: tintColor, radius: 0, x: 2, y: 2)
                 Text(game.howToPlay)
-                    .font(.caption2).foregroundColor(Theme.textSecondary)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundColor(Theme.textSecondary)
                     .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
-            HStack(spacing: 4) {
+            HStack(spacing: 6) {
                 Image(systemName: ready ? "play.fill" : "lock.fill")
-                Text(ready ? "Play" : "Needs feed")
+                Text(ready ? "READY" : "LOCKED")
+                    .tracking(2)
             }
-            .font(.caption2.bold())
-            .foregroundColor(ready ? tintColor : Theme.textSecondary)
+            .font(.hype(12))
+            .foregroundColor(.black)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(ready ? tintColor : Theme.surface)
+            .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
         }
-        .frame(maxWidth: .infinity, minHeight: 180, alignment: .topLeading)
-        .cardStyle()
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.Radius.medium)
-                .stroke(ready ? tintColor.opacity(0.25) : Color.clear, lineWidth: 1)
-        )
+        .padding(16)
+        .frame(maxWidth: .infinity, minHeight: 200, alignment: .topLeading)
+        .celBorder(tint: tintColor, strokeWidth: ready ? 3 : 1.5)
+        .opacity(ready ? 1.0 : 0.7)
     }
 
     private var icon: String {

@@ -6,48 +6,75 @@ struct GlassesSetupView: View {
     @ObservedObject var rayBan: RayBanManager
 
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer()
-            Image(systemName: "eyeglasses")
-                .font(.system(size: 96, weight: .light))
-                .foregroundColor(Theme.accent)
+        ZStack {
+            Theme.background.ignoresSafeArea()
+            Halftone().ignoresSafeArea()
+            SpeedLines(tint: Theme.accent, intensity: 0.35)
+                .ignoresSafeArea()
+                .opacity(0.6)
 
-            VStack(spacing: 8) {
-                Text("Connect your glasses")
-                    .font(.largeTitle.bold())
-                    .foregroundColor(Theme.textPrimary)
-                Text("VisionClaude Gaming needs your Meta Ray-Ban feed to read head motion.")
-                    .font(.body)
-                    .multilineTextAlignment(.center)
+            VStack(spacing: 24) {
+                Spacer()
+
+                ZStack {
+                    Burst(points: 10, innerRatio: 0.7)
+                        .fill(Theme.accent)
+                        .frame(width: 200, height: 200)
+                    Burst(points: 10, innerRatio: 0.7)
+                        .stroke(Color.black, lineWidth: 3)
+                        .frame(width: 200, height: 200)
+                    Image(systemName: "eyeglasses")
+                        .font(.system(size: 80, weight: .black))
+                        .foregroundColor(.black)
+                }
+                .rotationEffect(.degrees(-6))
+                .shadow(color: .black, radius: 0, x: 5, y: 6)
+
+                VStack(spacing: 4) {
+                    Text("VISIONCLAUDE")
+                        .font(.hype(16)).tracking(6)
+                        .foregroundColor(Theme.accent)
+                    Text("GAMING")
+                        .font(.hype(52))
+                        .foregroundColor(Theme.textPrimary)
+                        .shadow(color: Theme.accent, radius: 0, x: 4, y: 4)
+                }
+
+                Text("Link your Meta Ray-Bans to fight.")
+                    .font(.hype(16)).tracking(2)
                     .foregroundColor(Theme.textSecondary)
-                    .padding(.horizontal)
+                    .multilineTextAlignment(.center)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    step(number: 1, text: "POWER ON YOUR GLASSES")
+                    step(number: 2, text: "PAIR IN THE META AI APP")
+                    step(number: 3, text: "TAP CONNECT TO AUTHORIZE")
+                }
+                .padding(16)
+                .celBorder(tint: Theme.accent)
+                .padding(.horizontal, 24)
+
+                statusPill
+
+                Spacer()
+
+                Button(action: primaryAction) {
+                    Text(primaryActionLabel.uppercased())
+                        .font(.hype(22)).tracking(4)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Theme.accent)
+                        .foregroundColor(.black)
+                        .overlay(Rectangle().stroke(Color.black, lineWidth: 3))
+                }
+                .buttonStyle(.plain)
+                .rotationEffect(.degrees(-1))
+                .shadow(color: .black, radius: 0, x: 4, y: 5)
+                .padding(.horizontal, 24)
             }
-
-            VStack(alignment: .leading, spacing: 14) {
-                step(number: 1, text: "Power on your glasses and open the hinges")
-                step(number: 2, text: "Pair them in the Meta AI app if you haven't already")
-                step(number: 3, text: "Tap Connect — you'll be bounced to Meta AI to approve")
-            }
-            .padding(.horizontal, 24)
-
-            statusPill
-
-            Spacer()
-
-            Button(action: primaryAction) {
-                Text(primaryActionLabel)
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Theme.accent)
-                    .foregroundColor(.black)
-                    .cornerRadius(Theme.Radius.medium)
-            }
-            .padding(.horizontal, 24)
+            .padding(.vertical, 40)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .padding(.vertical, 40)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Theme.background.ignoresSafeArea())
         .onAppear {
             rayBan.startMonitoringRegistration()
         }
@@ -55,15 +82,17 @@ struct GlassesSetupView: View {
 
     @ViewBuilder
     private func step(number: Int, text: String) -> some View {
-        HStack(alignment: .top, spacing: 14) {
+        HStack(alignment: .center, spacing: 14) {
             Text("\(number)")
-                .font(.subheadline.bold())
-                .frame(width: 28, height: 28)
-                .background(Circle().fill(Theme.surfaceStrong))
-                .foregroundColor(Theme.accent)
+                .font(.hype(18))
+                .frame(width: 32, height: 32)
+                .background(Theme.accent)
+                .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
+                .foregroundColor(.black)
+                .rotationEffect(.degrees(-4))
             Text(text)
-                .font(.subheadline)
-                .foregroundColor(Theme.textSecondary)
+                .font(.hype(14)).tracking(1)
+                .foregroundColor(Theme.textPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
@@ -72,14 +101,16 @@ struct GlassesSetupView: View {
         HStack(spacing: 8) {
             Circle()
                 .fill(statusColor)
-                .frame(width: 8, height: 8)
-            Text(statusText)
-                .font(.footnote)
-                .foregroundColor(Theme.textSecondary)
+                .frame(width: 10, height: 10)
+                .overlay(Circle().stroke(Color.black, lineWidth: 1))
+            Text(statusText.uppercased())
+                .font(.hype(12)).tracking(3)
+                .foregroundColor(Theme.textPrimary)
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(Capsule().fill(Theme.surface))
+        .background(Theme.surfaceStrong)
+        .overlay(Rectangle().stroke(statusColor, lineWidth: 2))
     }
 
     private var statusText: String {

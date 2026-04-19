@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 /// The active gameplay screen. Chrome is shared across all games; the hero
 /// area dispatches to a game-specific visualization based on game.id.
@@ -7,6 +8,13 @@ struct GameSessionView: View {
     @ObservedObject var rayBan: RayBanManager
     @Binding var selectedGameID: String?
 
+    // Flash state — set by the last gesture event and fades within 500ms so
+    // every flick/swing gets an anime-style "POW" confirmation.
+    @State private var flashText: String = ""
+    @State private var flashKey: UUID = UUID()
+    @State private var flashOpacity: Double = 0
+    @State private var eventSub: AnyCancellable?
+
     var body: some View {
         guard let game = activeGame else {
             return AnyView(EmptyView())
@@ -14,21 +22,50 @@ struct GameSessionView: View {
         return AnyView(
             ZStack {
                 Theme.background.ignoresSafeArea()
+                Halftone().ignoresSafeArea()
                 VStack(spacing: 16) {
                     topBar(for: game)
                     scoreRow(for: game)
-                    heroArt(for: game)
+                    heroContainer(for: game)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     coachingPanel(for: game)
                     liveMotionBar(for: game)
                 }
                 .padding(20)
 
+                if flashOpacity > 0 {
+                    BurstBadge(text: flashText, tint: tint(for: game), size: 180)
+                        .opacity(flashOpacity)
+                        .scaleEffect(0.7 + flashOpacity * 0.4)
+                        .allowsHitTesting(false)
+                        .id(flashKey)
+                }
+
                 if game.isFinished {
                     finishedOverlay(for: game)
                 }
             }
+            .onAppear { subscribeToEvents() }
+            .onDisappear { eventSub = nil }
         )
+    }
+
+    private func subscribeToEvents() {
+        eventSub = coordinator.engine.events
+            .filter { $0.kind != .hold }
+            .sink { event in
+                flashText = "\(event.kind.rawValue.uppercased()) \(event.direction.rawValue.uppercased())!"
+                flashKey = UUID()
+                withAnimation(.easeOut(duration: 0.08)) { flashOpacity = 1 }
+                withAnimation(.easeIn(duration: 0.45).delay(0.1)) { flashOpacity = 0 }
+            }
+    }
+
+    private func heroContainer(for game: any Game) -> some View {
+        ZStack {
+            SpeedLines(tint: tint(for: game), intensity: CGFloat(min(1, coordinator.engine.liveMagnitude)))
+            heroArt(for: game)
+        }
     }
 
     private var activeGame: (any Game)? {
@@ -47,60 +84,70 @@ struct GameSessionView: View {
                 coordinator.stop()
                 selectedGameID = nil
             } label: {
-                HStack(spacing: 6) {
+                HStack(spacing: 4) {
                     Image(systemName: "chevron.left")
-                    Text("Home")
+                    Text("EXIT").tracking(2)
                 }
-                .font(.subheadline.bold())
-                .foregroundColor(tint(for: game))
+                .font(.hype(14))
+                .foregroundColor(.black)
+                .padding(.horizontal, 12).padding(.vertical, 6)
+                .background(tint(for: game))
+                .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
+                .rotationEffect(.degrees(-3))
             }
             Spacer()
-            Text(game.title)
-                .font(.headline)
+            Text(game.title.uppercased())
+                .font(.hype(22))
                 .foregroundColor(Theme.textPrimary)
+                .shadow(color: tint(for: game), radius: 0, x: 2, y: 2)
             Spacer()
             Button {
                 coordinator.activate(gameID: game.id)
             } label: {
                 Image(systemName: "arrow.counterclockwise")
-                    .font(.subheadline.bold())
-                    .foregroundColor(Theme.textSecondary)
+                    .font(.system(size: 14, weight: .black))
+                    .foregroundColor(.black)
+                    .padding(8)
+                    .background(Theme.textPrimary)
+                    .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
+                    .rotationEffect(.degrees(3))
             }
         }
     }
 
     private func scoreRow(for game: any Game) -> some View {
-        HStack(spacing: 16) {
-            metric(label: "Score", value: "\(game.score)")
-            Divider().frame(height: 32).overlay(Theme.stroke)
-            metric(label: "Status", value: game.statusLine, wide: true)
+        HStack(spacing: 12) {
+            BurstBadge(text: "\(game.score)", tint: tint(for: game), size: 88)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("STATUS")
+                    .font(.hype(12)).tracking(3)
+                    .foregroundColor(tint(for: game))
+                Text(game.statusLine)
+                    .font(.hype(17))
+                    .foregroundColor(Theme.textPrimary)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .celBorder(tint: tint(for: game))
         }
-        .cardStyle()
-    }
-
-    private func metric(label: String, value: String, wide: Bool = false) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label.uppercased())
-                .font(.caption2).foregroundColor(Theme.textSecondary)
-                .tracking(1.2)
-            Text(value)
-                .font(wide ? .subheadline.bold() : .title2.bold())
-                .foregroundColor(Theme.textPrimary)
-                .lineLimit(2)
-        }
-        .frame(maxWidth: wide ? .infinity : nil, alignment: .leading)
     }
 
     private func coachingPanel(for game: any Game) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "lightbulb.fill")
-                .foregroundColor(tint(for: game))
+                .foregroundColor(.black)
+                .padding(6)
+                .background(tint(for: game))
+                .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
             Text(game.howToPlay)
-                .font(.footnote)
-                .foregroundColor(Theme.textSecondary)
+                .font(.footnote.weight(.semibold))
+                .foregroundColor(Theme.textPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .cardStyle()
+        .padding(12)
+        .celBorder(tint: tint(for: game), strokeWidth: 2)
     }
 
     private func liveMotionBar(for game: any Game) -> some View {
@@ -128,33 +175,47 @@ struct GameSessionView: View {
     // MARK: - Finished overlay
 
     private func finishedOverlay(for game: any Game) -> some View {
-        VStack(spacing: 16) {
-            Text("Game over")
-                .font(.title.bold()).foregroundColor(Theme.textPrimary)
-            Text("Final score \(game.score)")
-                .font(.title2).foregroundColor(Theme.accent)
+        VStack(spacing: 20) {
+            Text("GAME\nOVER")
+                .font(.hype(56))
+                .foregroundColor(Theme.textPrimary)
+                .multilineTextAlignment(.center)
+                .shadow(color: tint(for: game), radius: 0, x: 4, y: 4)
+            BurstBadge(text: "\(game.score)", tint: tint(for: game), size: 140)
+            Text("FINAL SCORE")
+                .font(.hype(14)).tracking(4)
+                .foregroundColor(Theme.textSecondary)
             HStack(spacing: 12) {
-                Button("Play again") {
+                Button {
                     coordinator.activate(gameID: game.id)
+                } label: {
+                    Text("REMATCH").tracking(3)
+                        .font(.hype(16))
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 18).padding(.vertical, 10)
+                        .background(tint(for: game))
+                        .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
+                        .rotationEffect(.degrees(-2))
                 }
-                .buttonStyle(.borderedProminent).tint(Theme.accent)
-                Button("Home") {
+                .buttonStyle(.plain)
+                Button {
                     coordinator.stop()
                     selectedGameID = nil
+                } label: {
+                    Text("EXIT").tracking(3)
+                        .font(.hype(16))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 18).padding(.vertical, 10)
+                        .overlay(Rectangle().stroke(.white, lineWidth: 2))
+                        .rotationEffect(.degrees(2))
                 }
-                .buttonStyle(.bordered).tint(.white)
+                .buttonStyle(.plain)
             }
         }
         .padding(32)
-        .background(
-            RoundedRectangle(cornerRadius: Theme.Radius.large)
-                .fill(Theme.background)
-                .overlay(
-                    RoundedRectangle(cornerRadius: Theme.Radius.large)
-                        .stroke(Theme.stroke, lineWidth: 1)
-                )
-        )
-        .shadow(radius: 40)
+        .background(Theme.background)
+        .overlay(Rectangle().stroke(tint(for: game), lineWidth: 4))
+        .shadow(color: .black, radius: 0, x: 6, y: 8)
     }
 
     // MARK: - Hero art dispatcher
