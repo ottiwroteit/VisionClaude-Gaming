@@ -1,0 +1,93 @@
+import Foundation
+import Combine
+import UIKit
+
+/// Wires the Ray-Ban frame stream into GestureEngine and routes gesture events
+/// into the currently selected Game. One coordinator per session; swap games
+/// at runtime without restarting the camera.
+@MainActor
+final class GameCoordinator: ObservableObject {
+
+    @Published private(set) var activeGameID: String?
+    @Published private(set) var lastEventLabel: String = ""
+
+    let engine = GestureEngine()
+    let progress: ProgressStore
+    private var games: [String: any Game] = [:]
+    private var activeGame: (any Game)?
+    private var eventSubscription: AnyCancellable?
+    private var frameSubscription: AnyCancellable?
+    private var activeGameSubscription: AnyCancellable?
+
+    init(progress: ProgressStore = .shared) {
+        self.progress = progress
+        eventSubscription = engine.events.sink { [weak self] event in
+            guard let self else { return }
+            self.lastEventLabel = "\(event.kind.rawValue) \(event.direction.rawValue) m=\(String(format: "%.2f", event.magnitude))"
+            self.activeGame?.handle(event)
+        }
+    }
+
+    func register(_ game: any Game) {
+        games[game.id] = game
+    }
+
+    var allGames: [any Game] {
+        games.values.sorted { $0.title < $1.title }
+    }
+
+    func activate(gameID: String) {
+        // Bank any in-progress score before swapping or restarting.
+        bankActiveScore()
+
+        activeGame?.reset()
+        activeGameSubscription = nil
+        activeGame = games[gameID]
+        activeGameID = gameID
+        if let game = activeGame {
+            // Apply the current venue's modifier so the game's handle() can
+            // read scoreMultiplier / difficultyMultiplier / effect. Mutating
+            // via a var binding so Swift lets us set through the existential.
+            var mutable = game
+            mutable.activeModifier = progress.currentVenue(for: gameID).modifier
+
+            // Apply the game's preferred classifier thresholds before the
+            // engine starts so the first flow sample is classified correctly.
+            engine.configure(game.preferredThresholds ?? MotionClassifier.Thresholds())
+
+            // Forward the game's state changes so SwiftUI views observing the
+            // coordinator re-render when score/statusLine/isFinished change.
+            activeGameSubscription = game.changes.sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            game.start()
+        }
+        engine.start()
+    }
+
+    func stop() {
+        bankActiveScore()
+        engine.stop()
+        activeGame?.reset()
+        activeGame = nil
+        activeGameID = nil
+    }
+
+    /// Reports the active game's score into ProgressStore, which handles
+    /// unlock detection. Safe to call multiple times — a zero-score game
+    /// won't count.
+    private func bankActiveScore() {
+        guard let game = activeGame, game.score > 0 else { return }
+        progress.reportScore(game.score, for: game.id)
+    }
+
+    /// Subscribe to a FrameSource's latest-image publisher and pipe frames in.
+    func attach<P: Publisher>(frames: P) where P.Output == UIImage?, P.Failure == Never {
+        frameSubscription = frames
+            .compactMap { $0 }
+            .throttle(for: .milliseconds(33), scheduler: RunLoop.main, latest: true)
+            .sink { [weak self] image in
+                self?.engine.ingest(image: image)
+            }
+    }
+}

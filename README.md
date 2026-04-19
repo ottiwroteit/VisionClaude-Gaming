@@ -1,306 +1,129 @@
-<h1 align="center">
-<pre>
-<span style="color:#FF9500">██╗   ██╗██╗███████╗██╗ ██████╗ ███╗   ██╗</span>
-<span style="color:#FF9500">██║   ██║██║██╔════╝██║██╔═══██╗████╗  ██║</span>
-<span style="color:#CC7700">██║   ██║██║███████╗██║██║   ██║██╔██╗ ██║</span>
-<span style="color:#CC7700">╚██╗ ██╔╝██║╚════██║██║██║   ██║██║╚██╗██║</span>
-<span style="color:#FFB74D"> ╚████╔╝ ██║███████║██║╚██████╔╝██║ ╚████║</span>
-<span style="color:#FFB74D">  ╚═══╝  ╚═╝╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═══╝</span>
+# VisionClaude Gaming
 
-<span style="color:#FF9500"> ██████╗██╗      █████╗ ██╗   ██╗██████╗ ███████╗</span>
-<span style="color:#FF9500">██╔════╝██║     ██╔══██╗██║   ██║██╔══██╗██╔════╝</span>
-<span style="color:#CC7700">██║     ██║     ███████║██║   ██║██║  ██║█████╗  </span>
-<span style="color:#CC7700">██║     ██║     ██╔══██║██║   ██║██║  ██║██╔══╝  </span>
-<span style="color:#FFB74D">╚██████╗███████╗██║  ██║╚██████╔╝██████╔╝███████╗</span>
-<span style="color:#FFB74D"> ╚═════╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝</span>
-</pre>
-</h1>
+Motion-controlled games on your phone, driven entirely by the camera feed from your **Meta Ray-Ban smart glasses**. Flick your chin up to bowl. Turn your head to swing a tennis racket. Duck to dodge a jab.
 
-<p align="center">
-<b>Let Claude see the world through your eyes</b><br>
-<sub>Built by <a href="https://github.com/mrdulasolutions">@mrdulasolutions</a></sub>
-</p>
+The glasses are the controller. The phone is the game.
 
-<p align="center">
-<img src="https://img.shields.io/badge/Channel_Mode-Claude_Code_Direct-FF9500?style=flat-square&logo=anthropic&logoColor=white" />
-<img src="https://img.shields.io/badge/iPhone-1080p_@_30fps-FF9500?style=flat-square&logo=apple&logoColor=white" />
-<img src="https://img.shields.io/badge/Ray--Ban_Meta-720p_@_30fps-FF9500?style=flat-square&logo=meta&logoColor=white" />
-<img src="https://img.shields.io/badge/TTS-ElevenLabs_Flash-FF9500?style=flat-square" />
-</p>
+## The idea
 
----
+Meta Ray-Bans don't expose an IMU or motion API to third-party apps — but they *do* expose a live camera feed. VisionClaude Gaming runs optical flow on that feed in real time: when your head moves, the scene pans, and the app converts that motion into a small gesture vocabulary that every game shares.
 
-**VisionClaude** turns your iPhone or Meta Ray-Ban Smart Glasses into Claude's eyes and ears. Your phone connects directly to your Claude Code session — speak naturally, and Claude sees what you see, responds with voice, and uses ALL your MCP tools and skills.
+| Gesture | How it looks to the optical-flow engine |
+| --- | --- |
+| **Flick** | Short, sharp motion under ~280ms — "chin flick up", "head snap left" |
+| **Swing** | Longer sustained motion in one direction — "forehand turn", "hook" |
+| **Hold** | Steady, low-motion window — used for aiming and charging |
 
-```
-iPhone/Glasses  ──→  Channel Plugin  ──→  Claude Code (Opus)
-  (camera+voice)     (WebSocket)          ALL your MCP tools
-                                          ALL your skills
-                                          Full Cowork session
-```
+Each gesture carries a **direction** (up/down/left/right), a **magnitude** (0–1, maps to power), and a **duration**. Games map that vocabulary to their own action set.
 
-## Quick Start (5 minutes)
+## Games
 
-### What You Need
+Six built-in games, all sharing one engine:
 
-| Requirement | How to Get It |
-|---|---|
-| macOS 13+ | You probably have this |
-| Node.js 18+ | `brew install node` |
-| Bun | `curl -fsSL https://bun.sh/install \| bash` |
-| Xcode 15+ | Mac App Store |
-| iPhone (iOS 17+) | Physical device, USB cable |
-| Claude Code CLI | `npm install -g @anthropic-ai/claude-code` |
+- **Meta Bowling** — flick your chin up to roll; harder flick = more power
+- **Meta Tennis** — turn right/left for forehand/backhand, chin-up to serve
+- **Meta Ping Pong** — twitch-reflex flicks; timing matters more than power
+- **Meta Boxing** — bob and slip to dodge telegraphed punches, chin-down to jab, side-swing to hook
+- **Meta Archery** — hold still to draw, chin-flick up to release; draw duration = power
+- **Meta Fruit Slash** — flick your head toward each incoming fruit; don't slice the bombs
 
-### Step 1: Clone and Setup
+Adding a seventh game is ~80 lines of Swift — conform to the `Game` protocol, map gestures to actions, and publish state.
 
-```bash
-git clone https://github.com/mrdulasolutions/visionclaude.git
-cd visionclaude/ClaudeVision
-./setup.sh
-```
+## Progression & persistence
 
-The interactive installer handles dependencies, API keys, and Xcode project generation:
+- **Venues** — each game has 3 unlockable environments (starter + 2 earned by stacking cumulative score). All 18 are procedural SwiftUI — drop in real key art later without touching layout.
+- **Venue modifiers** — later venues tweak gameplay: Dragon Shrine doubles bowling points, Bamboo Forest adds wind drift to archery, Title Fight amplifies boxing hooks, Heaven's Garden doubles fruit-slice score.
+- **Per-venue high scores** — best single-session per (game, venue), rendered on the carousel cards and the game-over ribbon.
+- **Daily challenge** — deterministic one-a-day across all games, with a +bonus applied to cumulative total on completion.
+- **Share card** — `ImageRenderer` produces a 900×1200 bragging PNG composed of the venue, score burst, and branding; piped through `UIActivityViewController`.
+- **Dev console** — long-press the "GAMING" title on Home to open it. Replays canned gesture scripts into any game, lets you swap app icons, and resets progress.
 
-<p align="center">
-<img src="ClaudeVision/docs/images/setup-screenshot.png" alt="VisionClaude Setup" width="500" />
-</p>
+## App icon
 
-### Step 2: Start the Channel
-
-Add VisionClaude as an MCP server in your project's `.mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "visionclaude": {
-      "command": "bun",
-      "args": ["run", "/path/to/visionclaude/ClaudeVision/channel/server.ts"]
-    }
-  }
-}
-```
-
-Then launch Claude Code with the channel enabled:
-
-```bash
-claude --dangerously-load-development-channels "server:visionclaude"
-```
-
-### Step 3: Get Your Token
-
-Open the dashboard in your browser:
+The primary icon lives in `ClaudeVision/Assets.xcassets/AppIcon.appiconset`. Six **alternate** icons (one per game) are scaffolded in `Info.plist` — drop these PNGs at the bundle root to activate them:
 
 ```
-http://localhost:18790
+AppIcon-Bowling@2x.png     (120×120)   AppIcon-Bowling@3x.png     (180×180)
+AppIcon-Tennis@2x.png      (120×120)   AppIcon-Tennis@3x.png      (180×180)
+AppIcon-PingPong@2x.png    (120×120)   AppIcon-PingPong@3x.png    (180×180)
+AppIcon-Boxing@2x.png      (120×120)   AppIcon-Boxing@3x.png      (180×180)
+AppIcon-Archery@2x.png     (120×120)   AppIcon-Archery@3x.png     (180×180)
+AppIcon-FruitSlash@2x.png  (120×120)   AppIcon-FruitSlash@3x.png  (180×180)
 ```
 
-You'll see your **Channel Token**, your **Mac's IP address**, and copy buttons for both. The dashboard also lets you send messages to your phone, configure ElevenLabs TTS, and monitor activity.
-
-### Step 4: Connect Your Phone
-
-Open the VisionClaude app on your iPhone, go to **Settings**, and enter:
-
-| Setting | Value |
-|---|---|
-| **Host** | Your Mac's IP (shown on dashboard) |
-| **Port** | `18790` |
-| **Channel Token** | Copy from dashboard |
-
-Tap **Connect**. You should see a green status indicator — you're now talking directly to your Claude Code session.
-
-### Step 5: Start Talking
-
-Point your camera at something and say *"What am I looking at?"* — Claude describes it. Say *"Email this to my team"* — Claude uses your email MCP tool. Every tool and skill in your Cowork session is available through voice.
-
----
-
-## Features
-
-### Vision
-- **iPhone camera** — 1920x1080 (1080p) @ 30fps, continuous autofocus
-- **Meta Ray-Ban glasses** — 1280x720 (720p) @ 30fps via DAT SDK
-- High-performance `CADisplayLink` renderer (smooth video, not snapshots)
-- 85% JPEG quality for accurate text/brand/object identification
-
-### Voice
-- **STT**: Apple Speech Recognition (on-device, privacy-first)
-- **TTS**: ElevenLabs Flash v2.5 with 10 selectable voices, or Apple TTS fallback
-- Tap-to-interrupt: stop Claude mid-sentence
-- Bluetooth mic routing for hands-free glasses operation
-- Configurable from the web dashboard or iOS app settings
-
-### Channel Dashboard (http://localhost:18790)
-
-<p align="center">
-<img src="ClaudeVision/docs/images/dashboard-screenshot.png" alt="VisionClaude Dashboard" width="500" />
-</p>
-
-- Retro terminal UI with live status monitoring
-- Auto-detects and displays your Mac's IP
-- One-click copy for token, IP, and all settings
-- Send messages to your phone from your Mac
-- Configure ElevenLabs API key directly
-- Activity log showing all inbound/outbound messages
-- Live client connection count
-
-### Security
-- **Shared secret token** — auto-generated, required for all connections
-- Token stored at `~/.claude/channels/visionclaude/.channel-token` (owner-only permissions)
-- Health endpoint is public; everything else requires auth
-- Override with `VISIONCLAUDE_TOKEN=your-custom-token` env var
-
-### Auto-Approve Permissions
-
-By default, Claude Code prompts for approval on every action from the phone. Choose your comfort level:
-
-**Replies only** (safest) — add to `.claude/settings.local.json`:
-```json
-{
-  "permissions": {
-    "allow": [
-      "mcp__visionclaude__reply",
-      "mcp__visionclaude__edit_message",
-      "Read(~/.claude/channels/visionclaude/**)"
-    ]
-  }
-}
-```
-
-**All VisionClaude tools** (convenient):
-```bash
-claude --dangerously-load-development-channels "server:visionclaude" \
-  --allowedTools "mcp__visionclaude__*"
-```
-
-**Full hands-free** (use with care — skips ALL prompts):
-```bash
-claude --dangerously-load-development-channels "server:visionclaude" \
-  -p bypassPermissions
-```
-
----
-
-## Gateway Mode (Alternative)
-
-If you don't use Claude Code, the standalone gateway server works with just an Anthropic API key:
-
-```bash
-cd ClaudeVision/server
-cp .env.example .env        # Add your ANTHROPIC_API_KEY
-npm install && npm run build && npm start
-```
-
-Gateway Mode auto-discovers MCP servers from your Claude Desktop config and skills from your local repos. It uses the Claude API directly instead of going through Claude Code.
-
-### Adding MCP Servers (Gateway Mode)
-
-Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
-
-**Local server:**
-```json
-{
-  "mcpServers": {
-    "slack": {
-      "command": "npx",
-      "args": ["-y", "@anthropic/mcp-slack"],
-      "env": { "SLACK_BOT_TOKEN": "xoxb-your-token" }
-    }
-  }
-}
-```
-
-**Remote server:**
-```json
-{
-  "mcpServers": {
-    "paysponge": {
-      "url": "https://api.wallet.paysponge.com/mcp",
-      "headers": { "Authorization": "Bearer your-api-key" }
-    }
-  }
-}
-```
-
-Restart the gateway after changes: `lsof -ti:18790 | xargs kill -9 && npm start`
-
----
-
-## Meta Ray-Ban Glasses
-
-1. Install **Meta AI** app → pair glasses via Bluetooth
-2. **Developer Mode**: Meta AI → Settings → your glasses → Developer Mode → ON
-3. Restart glasses (hold button 15s to power off, press to power on)
-4. Register at [developers.meta.com](https://developers.meta.com): Create app → Wearables → iOS config (Team ID + Bundle ID `com.claudevision.app`) → create version → assign to release channel
-5. In VisionClaude: Settings → **Connect Glasses via Meta AI** → Approve
-6. Switch camera source to **Meta Ray-Ban**
-
-The DAT SDK is included via SPM from [facebook/meta-wearables-dat-ios](https://github.com/facebook/meta-wearables-dat-ios).
-
-By using the Wearables Device Access Toolkit, you agree to the [Meta Wearables Developer Terms](https://wearables.developer.meta.com/terms) and [Acceptable Use Policy](https://wearables.developer.meta.com/acceptable-use-policy).
-
----
-
-## ElevenLabs Voices
-
-Configure via the web dashboard (http://localhost:18790) or iOS app Settings.
-
-| Voice | Style | Gender |
-|---|---|---|
-| Rachel | Calm & warm | Female |
-| Drew | Well-rounded | Male |
-| Clyde | Deep & strong | Male |
-| Paul | Ground news | Male |
-| Domi | Assertive | Female |
-| Dave | British conversational | Male |
-| Fin | Irish | Male |
-| Sarah | Soft & young | Female |
-| Antoni | Well-rounded | Male |
-| Elli | Young & emotional | Female |
-
-Uses `eleven_flash_v2_5` model for lowest latency.
-
----
+Once present, the dev-console icon picker switches them at runtime via `UIApplication.setAlternateIconName`.
 
 ## Architecture
 
 ```
-ClaudeVision/
-├── channel/                    # Channel Mode (recommended)
-│   ├── server.ts               # MCP channel + WebSocket + dashboard
-│   ├── status.html             # Retro web dashboard
-│   └── package.json
-├── server/                     # Gateway Mode (standalone alternative)
-│   ├── src/
-│   │   ├── index.ts            # Express + branded ASCII console
-│   │   ├── claude-client.ts    # Claude API + vision + tool loop
-│   │   ├── mcp-manager.ts      # MCP server lifecycle (stdio + remote)
-│   │   ├── skill-loader.ts     # SKILL.md auto-discovery
-│   │   └── routes/             # REST endpoints
-│   └── skills/                 # Built-in skills
-├── ios/                        # iOS app (Swift/SwiftUI)
-│   ├── Models/                 # Config, API types
-│   ├── Services/               # Camera, speech, Ray-Ban, bridge
-│   ├── ViewModels/             # Session orchestrator
-│   └── Views/                  # UI (Apple HIG design)
-├── setup.sh                    # Interactive installer
-├── LICENSE                     # MIT
-├── CONTRIBUTING.md
-└── CODE_OF_CONDUCT.md
+Meta Ray-Ban glasses
+        │  30fps camera stream (DAT SDK)
+        ▼
+    RayBanManager (iOS)
+        │  UIImage frames
+        ▼
+    GestureEngine ──► VNTranslationalImageRegistrationRequest
+        │  SIMD2<Float> flow vectors
+        ▼
+    MotionClassifier
+        │  GestureEvent { kind, direction, magnitude, duration }
+        ▼
+    GameCoordinator ──► active Game ──► @Published state
+                                          │
+                                          ▼
+                              HomeView / GameSessionView (SwiftUI)
 ```
 
----
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for the deeper dive.
+
+## Running it
+
+Requirements:
+- Xcode 26 / iOS 17+
+- Meta Ray-Ban Smart Glasses paired with the Meta AI app
+- A Mac with [xcodegen](https://github.com/yonaskolb/XcodeGen) installed
+
+```sh
+cd ClaudeVision/ios
+xcodegen                       # regenerate the Xcode project from project.yml
+open ClaudeVision.xcodeproj    # build + run on a physical device
+```
+
+On first launch:
+1. The app opens to the **Connect glasses** screen
+2. Tap **Connect glasses** — you'll be handed off to the Meta AI app to approve the camera permission
+3. Back in VisionClaude Gaming, tap **Start feed** and then pick a game
+
+## First to market
+
+No third-party app has shipped real-time motion gaming on Meta Ray-Bans yet, because most teams assume they need the IMU. Optical flow on the video stream is the wedge — it works today, on shipping hardware, with no Meta partnership required.
+
+## Project layout
+
+```
+ClaudeVision/ios/
+├── project.yml                        # xcodegen spec
+└── ClaudeVision/
+    ├── ClaudeVisionApp.swift          # @main + DAT SDK bootstrap
+    ├── Info.plist                     # glasses/BLE permissions only
+    ├── Services/
+    │   ├── RayBanManager.swift        # DAT SDK wrapper
+    │   └── FrameSource.swift          # abstract frame-source protocol
+    ├── Gaming/
+    │   ├── GestureEvent.swift         # gesture vocabulary
+    │   ├── MotionClassifier.swift     # flow vectors → GestureEvents
+    │   ├── GestureEngine.swift        # Vision-framework optical flow
+    │   ├── Game.swift                 # game protocol
+    │   ├── GameCoordinator.swift      # wiring glue
+    │   └── Games/                     # six concrete games
+    └── Views/
+        ├── Theme.swift                # design tokens
+        ├── ContentView.swift          # root router
+        ├── GlassesSetupView.swift     # pairing onboarding
+        ├── HomeView.swift             # game picker + motion meter
+        └── GameSessionView.swift      # gameplay + per-game art
+```
 
 ## License
 
-MIT
-
-## Disclaimer
-
-This project is not affiliated with, endorsed by, or officially connected to Anthropic, PBC, Meta Platforms, Inc., or ElevenLabs, Inc. Claude is a trademark of Anthropic. Meta, Ray-Ban, and the Meta Wearables Device Access Toolkit are trademarks of Meta Platforms, Inc. ElevenLabs is a trademark of ElevenLabs, Inc.
-
----
-
-<p align="center">
-Built by <a href="https://github.com/mrdulasolutions">@mrdulasolutions</a>
-</p>
+MIT — see [LICENSE](./LICENSE).
