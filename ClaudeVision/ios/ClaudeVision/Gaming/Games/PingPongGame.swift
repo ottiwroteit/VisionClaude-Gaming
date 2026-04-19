@@ -5,6 +5,19 @@ final class PingPongGame: ObservableObject, Game {
     let id = "pingpong"
     let title = "Meta Ping Pong"
     let howToPlay = "Quick chin nods + side tilts. Timing matters more than power."
+    let tint: GameTint = .table
+
+    /// Ping pong is twitch-reflex — lower activeThreshold so tiny head jerks
+    /// register, and clamp flickMaxDuration hard so anything longer than a
+    /// real twitch gets thrown out as a swing (and ignored by this game).
+    var preferredThresholds: MotionClassifier.Thresholds? {
+        var t = MotionClassifier.Thresholds()
+        t.stillThreshold = 0.003
+        t.activeThreshold = 0.009
+        t.flickMaxDuration = 0.18
+        t.axisDominance = 1.4
+        return t
+    }
 
     @Published private(set) var score: Int = 0
     @Published private(set) var cpuScore: Int = 0

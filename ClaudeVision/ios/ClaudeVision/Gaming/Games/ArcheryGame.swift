@@ -5,6 +5,18 @@ final class ArcheryGame: ObservableObject, Game {
     let id = "archery"
     let title = "Meta Archery"
     let howToPlay = "Hold still to draw and aim. Flick chin up to release. Longer draw = more power."
+    let tint: GameTint = .gold
+
+    /// Archery lives on the hold channel — relax stillThreshold so natural
+    /// micro-tremor doesn't cancel the draw, and shorten minHoldDuration so
+    /// the drawStrength UI updates quickly as the player holds.
+    var preferredThresholds: MotionClassifier.Thresholds? {
+        var t = MotionClassifier.Thresholds()
+        t.stillThreshold = 0.006
+        t.minHoldDuration = 0.15
+        t.activeThreshold = 0.018
+        return t
+    }
 
     @Published private(set) var score: Int = 0
     @Published private(set) var arrowsLeft: Int = 5

@@ -40,6 +40,10 @@ final class GameCoordinator: ObservableObject {
         activeGame = games[gameID]
         activeGameID = gameID
         if let game = activeGame {
+            // Apply the game's preferred classifier thresholds before the
+            // engine starts so the first flow sample is classified correctly.
+            engine.configure(game.preferredThresholds ?? MotionClassifier.Thresholds())
+
             // Forward the game's state changes so SwiftUI views observing the
             // coordinator re-render when score/statusLine/isFinished change.
             activeGameSubscription = game.changes.sink { [weak self] _ in

@@ -5,6 +5,18 @@ final class TennisGame: ObservableObject, Game {
     let id = "tennis"
     let title = "Meta Tennis"
     let howToPlay = "Turn head right = forehand, left = backhand, chin up = serve."
+    let tint: GameTint = .court
+
+    /// Tennis is full-body swings — the engine should wait for a real turn.
+    /// Raise activeThreshold so small head corrections don't register, and
+    /// allow longer swings (up to 500ms) before we reclassify as hold.
+    var preferredThresholds: MotionClassifier.Thresholds? {
+        var t = MotionClassifier.Thresholds()
+        t.activeThreshold = 0.020
+        t.flickMaxDuration = 0.50
+        t.axisDominance = 1.8   // demand cleaner directions — no ambiguous diagonals
+        return t
+    }
 
     enum Phase: String { case serve, rally, pointOver }
 

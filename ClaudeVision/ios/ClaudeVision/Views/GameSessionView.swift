@@ -20,7 +20,7 @@ struct GameSessionView: View {
                     heroArt(for: game)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     coachingPanel(for: game)
-                    liveMotionBar
+                    liveMotionBar(for: game)
                 }
                 .padding(20)
 
@@ -33,6 +33,10 @@ struct GameSessionView: View {
 
     private var activeGame: (any Game)? {
         coordinator.allGames.first(where: { $0.id == coordinator.activeGameID })
+    }
+
+    private func tint(for game: any Game) -> Color {
+        Theme.color(for: game.tint)
     }
 
     // MARK: - Chrome
@@ -48,7 +52,7 @@ struct GameSessionView: View {
                     Text("Home")
                 }
                 .font(.subheadline.bold())
-                .foregroundColor(Theme.accent)
+                .foregroundColor(tint(for: game))
             }
             Spacer()
             Text(game.title)
@@ -90,7 +94,7 @@ struct GameSessionView: View {
     private func coachingPanel(for game: any Game) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "lightbulb.fill")
-                .foregroundColor(Theme.accent)
+                .foregroundColor(tint(for: game))
             Text(game.howToPlay)
                 .font(.footnote)
                 .foregroundColor(Theme.textSecondary)
@@ -99,7 +103,7 @@ struct GameSessionView: View {
         .cardStyle()
     }
 
-    private var liveMotionBar: some View {
+    private func liveMotionBar(for game: any Game) -> some View {
         VStack(spacing: 6) {
             HStack {
                 Text("Live motion").font(.caption2).foregroundColor(Theme.textSecondary)
@@ -113,7 +117,7 @@ struct GameSessionView: View {
                 ZStack(alignment: .leading) {
                     Capsule().fill(Theme.surface)
                     Capsule()
-                        .fill(Theme.accent)
+                        .fill(tint(for: game))
                         .frame(width: min(proxy.size.width, CGFloat(coordinator.engine.liveMagnitude) * proxy.size.width))
                 }
             }
@@ -176,12 +180,13 @@ struct GameSessionView: View {
 
 private struct BowlingArt: View {
     @ObservedObject var game: BowlingGame
+    private var tint: Color { Theme.color(for: game.tint) }
     var body: some View {
         VStack(spacing: 16) {
             HStack(spacing: 8) {
                 ForEach(0..<10, id: \.self) { i in
                     Capsule()
-                        .fill(i < game.pinsRemaining ? Theme.accent : Theme.surface)
+                        .fill(i < game.pinsRemaining ? tint : Theme.surface)
                         .frame(width: 14, height: 40)
                 }
             }
@@ -190,7 +195,7 @@ private struct BowlingArt: View {
                 .fill(LinearGradient(colors: [Theme.surface, Theme.surfaceStrong], startPoint: .top, endPoint: .bottom))
                 .frame(height: 140)
                 .overlay(
-                    Circle().fill(Theme.accent)
+                    Circle().fill(tint)
                         .frame(width: 38, height: 38)
                         .offset(y: 46)
                 )
@@ -203,17 +208,18 @@ private struct BowlingArt: View {
 
 private struct TennisArt: View {
     @ObservedObject var game: TennisGame
+    private var tint: Color { Theme.color(for: game.tint) }
     var body: some View {
         VStack(spacing: 12) {
             Text("You \(game.score) · \(phaseLabel)")
                 .font(.subheadline).foregroundColor(Theme.textSecondary)
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(Theme.accent.opacity(0.4), lineWidth: 2)
+                    .stroke(tint.opacity(0.5), lineWidth: 2)
                 VStack {
                     Rectangle().fill(Theme.stroke).frame(height: 1)
                 }
-                Circle().fill(Theme.accent)
+                Circle().fill(tint)
                     .frame(width: 18, height: 18)
                     .offset(y: game.phase == .rally ? -40 : 40)
                     .animation(.easeInOut(duration: 0.4), value: game.phase)
@@ -234,6 +240,7 @@ private struct TennisArt: View {
 
 private struct PingPongArt: View {
     @ObservedObject var game: PingPongGame
+    private var tint: Color { Theme.color(for: game.tint) }
     var body: some View {
         VStack(spacing: 12) {
             HStack {
@@ -242,11 +249,11 @@ private struct PingPongArt: View {
                 scoreTile(label: "CPU", value: game.cpuScore)
             }
             RoundedRectangle(cornerRadius: 10)
-                .fill(Theme.surfaceStrong)
+                .fill(tint.opacity(0.3))
                 .frame(height: 140)
                 .overlay(
                     HStack {
-                        Rectangle().fill(Theme.accent).frame(width: 4, height: 60)
+                        Rectangle().fill(tint).frame(width: 4, height: 60)
                         Spacer()
                         Circle().fill(.white).frame(width: 12, height: 12)
                         Spacer()
@@ -262,24 +269,25 @@ private struct PingPongArt: View {
         VStack(spacing: 2) {
             Text(label).font(.caption2).foregroundColor(Theme.textSecondary)
             Text("\(value)").font(.title.bold())
-                .foregroundColor(highlight ? Theme.accent : Theme.textPrimary)
+                .foregroundColor(highlight ? tint : Theme.textPrimary)
         }
     }
 }
 
 private struct BoxingArt: View {
     @ObservedObject var game: BoxingGame
+    private var tint: Color { Theme.color(for: game.tint) }
     var body: some View {
         VStack(spacing: 12) {
             HStack {
                 healthBar(label: "You", value: game.playerHealth, color: Theme.success)
-                healthBar(label: "CPU", value: game.cpuHealth, color: Theme.danger)
+                healthBar(label: "CPU", value: game.cpuHealth, color: tint)
             }
             ZStack {
-                Circle().fill(Theme.surfaceStrong).frame(width: 140, height: 140)
+                Circle().fill(tint.opacity(0.25)).frame(width: 140, height: 140)
                 Image(systemName: "figure.boxing")
                     .font(.system(size: 60))
-                    .foregroundColor(Theme.accent)
+                    .foregroundColor(tint)
                 if game.incomingAttack != .none {
                     Text("⚠ \(game.incomingAttack.rawValue)")
                         .font(.caption.bold())
@@ -309,15 +317,16 @@ private struct BoxingArt: View {
 
 private struct ArcheryArt: View {
     @ObservedObject var game: ArcheryGame
+    private var tint: Color { Theme.color(for: game.tint) }
     var body: some View {
         VStack(spacing: 12) {
             ZStack {
                 ForEach([50, 40, 30, 20, 10], id: \.self) { r in
                     Circle()
-                        .stroke(Theme.textSecondary.opacity(0.3), lineWidth: 1)
+                        .stroke(tint.opacity(0.35), lineWidth: 1)
                         .frame(width: CGFloat(r) * 3, height: CGFloat(r) * 3)
                 }
-                Circle().fill(Theme.accent).frame(width: 12, height: 12)
+                Circle().fill(tint).frame(width: 12, height: 12)
             }
             .frame(height: 180)
             VStack(alignment: .leading, spacing: 4) {
@@ -325,12 +334,12 @@ private struct ArcheryArt: View {
                     Text("Draw").font(.caption).foregroundColor(Theme.textSecondary)
                     Spacer()
                     Text("\(Int(game.drawStrength * 100))%")
-                        .font(.caption.monospaced()).foregroundColor(Theme.accent)
+                        .font(.caption.monospaced()).foregroundColor(tint)
                 }
                 GeometryReader { proxy in
                     ZStack(alignment: .leading) {
                         Capsule().fill(Theme.surface)
-                        Capsule().fill(Theme.accent)
+                        Capsule().fill(tint)
                             .frame(width: proxy.size.width * CGFloat(game.drawStrength))
                     }
                 }
@@ -344,20 +353,21 @@ private struct ArcheryArt: View {
 
 private struct FruitSlashArt: View {
     @ObservedObject var game: FruitSlashGame
+    private var tint: Color { Theme.color(for: game.tint) }
     var body: some View {
         VStack(spacing: 12) {
             HStack {
                 ForEach(0..<3, id: \.self) { i in
                     Image(systemName: i < game.lives ? "heart.fill" : "heart")
-                        .foregroundColor(Theme.danger)
+                        .foregroundColor(tint)
                 }
             }
             ZStack {
-                RoundedRectangle(cornerRadius: 12).fill(Theme.surfaceStrong)
+                RoundedRectangle(cornerRadius: 12).fill(tint.opacity(0.2))
                 if let fruit = game.currentFruit {
                     Image(systemName: fruit.isBomb ? "bolt.fill" : "leaf.fill")
                         .font(.system(size: 70))
-                        .foregroundColor(fruit.isBomb ? Theme.danger : Theme.accent)
+                        .foregroundColor(fruit.isBomb ? Theme.danger : tint)
                         .offset(fruitOffset(for: fruit.direction))
                         .transition(.scale)
                         .id(fruit.id)
@@ -384,7 +394,7 @@ private struct GenericArt: View {
         VStack {
             Image(systemName: "gamecontroller.fill")
                 .font(.system(size: 80))
-                .foregroundColor(Theme.accent)
+                .foregroundColor(Theme.color(for: game.tint))
         }
     }
 }

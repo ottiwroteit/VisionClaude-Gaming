@@ -5,6 +5,18 @@ final class FruitSlashGame: ObservableObject, Game {
     let id = "fruitslash"
     let title = "Meta Fruit Slash"
     let howToPlay = "Flick your head in the direction of each flying fruit to slice it."
+    let tint: GameTint = .berry
+
+    /// Fruit slash wants fast, directional flicks. Low activeThreshold so
+    /// snaps register, tight flick window, and strong axis dominance so a
+    /// flick toward "up" doesn't get mis-labeled as "up-left".
+    var preferredThresholds: MotionClassifier.Thresholds? {
+        var t = MotionClassifier.Thresholds()
+        t.activeThreshold = 0.010
+        t.flickMaxDuration = 0.22
+        t.axisDominance = 2.0
+        return t
+    }
 
     struct Fruit: Identifiable {
         let id = UUID()

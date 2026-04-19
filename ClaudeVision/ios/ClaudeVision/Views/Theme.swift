@@ -14,6 +14,19 @@ enum Theme {
     static let success = Color(red: 74/255, green: 222/255, blue: 128/255)
     static let danger = Color(red: 248/255, green: 113/255, blue: 113/255)
 
+    /// Per-game tint palette. Picked so each color is distinct at a glance
+    /// in the game grid and carries into the game's hero art.
+    static func color(for tint: GameTint) -> Color {
+        switch tint {
+        case .accent: return accent
+        case .court:  return Color(red:  76/255, green: 187/255, blue: 110/255) // tennis green
+        case .table:  return Color(red:  78/255, green: 140/255, blue: 220/255) // table blue
+        case .ring:   return Color(red: 232/255, green:  80/255, blue:  92/255) // boxing red
+        case .gold:   return Color(red: 234/255, green: 187/255, blue:  80/255) // archery gold
+        case .berry:  return Color(red: 226/255, green: 102/255, blue: 168/255) // fruit magenta
+        }
+    }
+
     enum Radius {
         static let small: CGFloat = 10
         static let medium: CGFloat = 16

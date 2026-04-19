@@ -138,13 +138,18 @@ struct GameCard: View {
     let game: any Game
     let ready: Bool
 
+    private var tintColor: Color { Theme.color(for: game.tint) }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Image(systemName: icon)
                 .font(.title)
-                .foregroundColor(Theme.accent)
+                .foregroundColor(tintColor)
                 .frame(width: 44, height: 44)
-                .background(Circle().fill(Theme.surfaceStrong))
+                .background(
+                    Circle().fill(tintColor.opacity(0.18))
+                        .overlay(Circle().stroke(tintColor.opacity(0.4), lineWidth: 1))
+                )
             VStack(alignment: .leading, spacing: 4) {
                 Text(game.title)
                     .font(.headline).foregroundColor(Theme.textPrimary)
@@ -160,10 +165,14 @@ struct GameCard: View {
                 Text(ready ? "Play" : "Needs feed")
             }
             .font(.caption2.bold())
-            .foregroundColor(ready ? Theme.accent : Theme.textSecondary)
+            .foregroundColor(ready ? tintColor : Theme.textSecondary)
         }
         .frame(maxWidth: .infinity, minHeight: 180, alignment: .topLeading)
         .cardStyle()
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.Radius.medium)
+                .stroke(ready ? tintColor.opacity(0.25) : Color.clear, lineWidth: 1)
+        )
     }
 
     private var icon: String {

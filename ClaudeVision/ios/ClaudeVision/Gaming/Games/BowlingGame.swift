@@ -5,6 +5,17 @@ final class BowlingGame: ObservableObject, Game {
     let id = "bowling"
     let title = "Meta Bowling"
     let howToPlay = "Flick your chin up to roll. Harder flick = more power."
+    let tint: GameTint = .accent
+
+    /// Bowling wants a deliberate flick — raise activeThreshold slightly so
+    /// idle head bob doesn't register, and give the player up to 350ms so a
+    /// full chin-snap still classifies as a flick rather than a swing.
+    var preferredThresholds: MotionClassifier.Thresholds? {
+        var t = MotionClassifier.Thresholds()
+        t.activeThreshold = 0.016
+        t.flickMaxDuration = 0.35
+        return t
+    }
 
     @Published private(set) var score: Int = 0
     @Published private(set) var frame: Int = 1

@@ -5,6 +5,16 @@ final class BoxingGame: ObservableObject, Game {
     let id = "boxing"
     let title = "Meta Boxing"
     let howToPlay = "Bob down to duck, tilt left/right to slip, flick forward (chin down) to jab."
+    let tint: GameTint = .ring
+
+    /// Boxing needs fast reflex detection — lower activeThreshold so small
+    /// slips register, and short flickMaxDuration so punches stay snappy.
+    var preferredThresholds: MotionClassifier.Thresholds? {
+        var t = MotionClassifier.Thresholds()
+        t.activeThreshold = 0.010
+        t.flickMaxDuration = 0.22
+        return t
+    }
 
     @Published private(set) var score: Int = 0
     @Published private(set) var playerHealth: Int = 100

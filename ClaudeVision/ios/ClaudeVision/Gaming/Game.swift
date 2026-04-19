@@ -23,6 +23,14 @@ protocol Game: AnyObject, ObservableObject {
 
     var changes: AnyPublisher<Void, Never> { get }
 
+    /// SwiftUI Color name used to tint the game card and hero art accents.
+    /// Defaults to the global Theme.accent when nil.
+    var tint: GameTint { get }
+
+    /// Gesture classifier settings this game prefers. Returning nil keeps the
+    /// engine's defaults. The coordinator applies these before `start()`.
+    var preferredThresholds: MotionClassifier.Thresholds? { get }
+
     func start()
     func reset()
     func handle(_ event: GestureEvent)
@@ -32,4 +40,20 @@ extension Game where Self.ObjectWillChangePublisher == ObservableObjectPublisher
     var changes: AnyPublisher<Void, Never> {
         objectWillChange.map { _ in () }.eraseToAnyPublisher()
     }
+}
+
+extension Game {
+    var tint: GameTint { .accent }
+    var preferredThresholds: MotionClassifier.Thresholds? { nil }
+}
+
+/// Named tints so games can pick from a curated palette without each one
+/// reaching for arbitrary colors. SwiftUI resolves these via Theme.color(for:).
+enum GameTint: String {
+    case accent     // default orange
+    case court      // tennis green
+    case table      // ping pong blue
+    case ring       // boxing red
+    case gold       // archery gold
+    case berry      // fruit slash magenta
 }
