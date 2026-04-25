@@ -120,7 +120,7 @@ class RayBanManager: NSObject, ObservableObject, FrameSource {
     }
 
     connectionStatus = .connecting
-    print("[RayBan] Starting stream session...")
+    print("[RayBan] Waiting for an eligible device...")
 
     let wearables = Wearables.shared
     let selector = AutoDeviceSelector(wearables: wearables)
@@ -132,6 +132,34 @@ class RayBanManager: NSObject, ObservableObject, FrameSource {
       resolution: .high,
       frameRate: 30
     )
+
+    // The MWDAT 0.5+ API requires an eligible device to exist before
+    // createSession is called — waiting for the AutoDeviceSelector to
+    // surface one avoids `noEligibleDevice` on the first cold-launch.
+    deviceMonitorTask = Task { @MainActor [weak self] in
+      for await device in selector.activeDeviceStream() {
+        guard let self else { return }
+        self.hasActiveDevice = device != nil
+        if device != nil {
+          self.glassesName = "Ray-Ban Meta"
+          print("[RayBan] Device active")
+          if self.streamSession == nil {
+            self.beginStreamSession(wearables: wearables, selector: selector, config: config)
+          }
+        } else {
+          self.glassesName = "No Device"
+          print("[RayBan] No active device")
+        }
+      }
+    }
+  }
+
+  private func beginStreamSession(
+    wearables: any WearablesInterface,
+    selector: AutoDeviceSelector,
+    config: StreamSessionConfig
+  ) {
+    print("[RayBan] Creating device session...")
     let deviceSession: DeviceSession
     let session: StreamSession
     do {
@@ -148,20 +176,6 @@ class RayBanManager: NSObject, ObservableObject, FrameSource {
       print("[RayBan] Failed to create device session: \(error)")
       connectionStatus = .error("Failed to create session: \(error.localizedDescription)")
       return
-    }
-
-    // Monitor device availability
-    deviceMonitorTask = Task { @MainActor in
-      for await device in selector.activeDeviceStream() {
-        self.hasActiveDevice = device != nil
-        if device != nil {
-          self.glassesName = "Ray-Ban Meta"
-          print("[RayBan] Device active")
-        } else {
-          self.glassesName = "No Device"
-          print("[RayBan] No active device")
-        }
-      }
     }
 
     // State changes
