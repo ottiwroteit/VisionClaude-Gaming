@@ -116,9 +116,9 @@
 		<key>AppLinkURLScheme</key>
 		<string>claudevision://</string>
 		<key>MetaAppID</key>
-		<string>925481547016740</string>
+		<string>815101094206954</string>
 		<key>ClientToken</key>
-		<string>AR|925481547016740|1308aa9551a5f26ffb9763a60110d88a</string>
+		<string>AR|815101094206954|3eec2204c9e5de89217b80abe1894b50</string>
 		<key>TeamID</key>
 		<string>$(DEVELOPMENT_TEAM)</string>
 		<key>Analytics</key>
