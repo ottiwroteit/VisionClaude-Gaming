@@ -186,6 +186,12 @@ class RayBanManager: NSObject, ObservableObject, FrameSource {
       print("[RayBan] Creating device session...")
       deviceSession = try wearables.createSession(deviceSelector: selector)
       self.deviceSession = deviceSession
+    } catch DeviceSessionError.sessionAlreadyExists {
+      print("[RayBan] Failed to create device session: sessionAlreadyExists")
+      connectionStatus = .error(
+        "A previous session is still alive. Force-quit Meta AI on your phone, then try again."
+      )
+      return
     } catch {
       print("[RayBan] Failed to create device session: \(error)")
       connectionStatus = .error("Failed to create session: \(error.localizedDescription)")
