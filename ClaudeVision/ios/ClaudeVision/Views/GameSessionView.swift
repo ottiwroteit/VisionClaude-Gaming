@@ -424,7 +424,10 @@ struct GameSessionView: View {
     case "tennis": if let g = game as? TennisGame { TennisArt(game: g) }
     case "pingpong": if let g = game as? PingPongGame { PingPongArt(game: g) }
     case "boxing": if let g = game as? BoxingGame { BoxingArt(game: g) }
-    case "archery": if let g = game as? ArcheryGame { ArcheryArt(game: g) }
+    case "archery":
+      if let g = game as? ArcheryGame {
+        ArcheryScene(game: g, venueID: progress.currentVenue(for: g.id).id)
+      }
     case "fruitslash": if let g = game as? FruitSlashGame { FruitSlashArt(game: g) }
     default: GenericArt(game: game)
     }
