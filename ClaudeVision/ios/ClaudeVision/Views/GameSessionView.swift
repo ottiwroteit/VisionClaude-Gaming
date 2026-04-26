@@ -344,7 +344,7 @@ private struct BowlingArt: View {
         Text("\(game.pinsRemaining) pins")
           .font(.caption2).foregroundColor(Theme.textSecondary)
       }
-      .foregroundColor(Theme.text)
+      .foregroundColor(Theme.textPrimary)
       .padding(.horizontal, 4)
 
       GeometryReader { geo in
@@ -556,7 +556,6 @@ private struct BowlingPinShape: Shape {
     let h = rect.height
     let headW = w * 0.55
     let neckW = w * 0.4
-    let baseW = w
     let headH = h * 0.22
     let neckBottomY = h * 0.55
     let baseTopY = h * 0.6

@@ -47,33 +47,32 @@ final class GameAudio {
 
   // MARK: - Bowling sequence
 
-  /// One call from BowlingGame.handle() plays the full audio arc for a
-  /// roll: thump (ball lands) → rolling rumble → crash (pins) → speak
-  /// the score callout. Timings give the player ~2.2s of bowling theater
-  /// before the score is announced.
+  /// Plays the audio arc for a roll. Synthesized SFX are temporarily
+  /// disabled — they crashed AVAudioEngine with "player did not see an
+  /// IO cycle" and sounded bad anyway. Speech-only until real audio
+  /// samples are bundled in the next pass.
   func playBowlSequence(scoreCallout: String) {
-    playThump()
-    scheduleAfter(0.12) { [weak self] in self?.playRolling() }
-    scheduleAfter(1.65) { [weak self] in self?.playCrash() }
-    scheduleAfter(2.15) { [weak self] in self?.speak(scoreCallout) }
+    scheduleAfter(0.4) { [weak self] in self?.speak(scoreCallout) }
   }
 
-  private func playThump() {
-    guard let buf = thumpBuffer else { return }
+  // Synth playback paths kept around for the next iteration when real
+  // file-backed playback replaces them. Currently unreachable.
+  @MainActor private func playThump() {
+    guard let buf = thumpBuffer, engine.isRunning else { return }
     thumpPlayer.stop()
     thumpPlayer.scheduleBuffer(buf, at: nil, options: .interrupts, completionHandler: nil)
     if !thumpPlayer.isPlaying { thumpPlayer.play() }
   }
 
-  private func playRolling() {
-    guard let buf = rollingBuffer else { return }
+  @MainActor private func playRolling() {
+    guard let buf = rollingBuffer, engine.isRunning else { return }
     rollingPlayer.stop()
     rollingPlayer.scheduleBuffer(buf, at: nil, options: .interrupts, completionHandler: nil)
     if !rollingPlayer.isPlaying { rollingPlayer.play() }
   }
 
-  private func playCrash() {
-    guard let buf = crashBuffer else { return }
+  @MainActor private func playCrash() {
+    guard let buf = crashBuffer, engine.isRunning else { return }
     crashPlayer.stop()
     crashPlayer.scheduleBuffer(buf, at: nil, options: .interrupts, completionHandler: nil)
     if !crashPlayer.isPlaying { crashPlayer.play() }
