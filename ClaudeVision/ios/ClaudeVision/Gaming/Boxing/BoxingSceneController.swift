@@ -33,6 +33,18 @@ final class BoxingSceneController: NSObject {
   private var incomingSub: AnyCancellable?
   private var hitSub: AnyCancellable?
 
+  // MARK: Material registries
+  // Multiple body parts share the "skin tone" colour; rather than
+  // walking the node tree on theme change to find them, we keep the
+  // material instances in flat arrays at construction time and re-tint
+  // each one in applyTheme. Same trick for trunks and gloves so the
+  // detailed boxer recolours cleanly across venue swaps.
+
+  private var skinMaterials: [SCNMaterial] = []
+  private var trunksMaterials: [SCNMaterial] = []
+  private var opponentGloveMaterials: [SCNMaterial] = []
+  private var playerGloveMaterials: [SCNMaterial] = []
+
   // MARK: Scene graph — opponent
 
   private var opponentRoot: SCNNode!
@@ -160,75 +172,285 @@ final class BoxingSceneController: NSObject {
 
   private func buildOpponent(into root: SCNNode) {
     // Torso — capsule for the chest.
-    let torsoGeo = SCNCapsule(capRadius: 0.30, height: 0.80)
+    let torsoGeo = SCNCapsule(capRadius: 0.32, height: 0.85)
     torsoGeo.firstMaterial = bodyMaterial()
     opponentTorso = SCNNode(geometry: torsoGeo)
-    opponentTorso.position = SCNVector3(0, 1.10, 0)
+    opponentTorso.position = SCNVector3(0, 1.12, 0)
     root.addChildNode(opponentTorso)
 
-    // Head — sphere on top.
-    let headGeo = SCNSphere(radius: 0.22)
-    headGeo.firstMaterial = bodyMaterial()
-    opponentHead = SCNNode(geometry: headGeo)
+    // Pectoral / shoulder bumps so the torso silhouette doesn't read
+    // as a single tube. Two slight spheres on top, just under where
+    // the shoulders sit.
+    let pecGeo = SCNSphere(radius: 0.13)
+    pecGeo.firstMaterial = bodyMaterial()
+    let leftPec = SCNNode(geometry: pecGeo)
+    leftPec.position = SCNVector3(-0.16, 0.30, 0.18)
+    opponentTorso.addChildNode(leftPec)
+    let rightPec = SCNNode(geometry: pecGeo.copy() as! SCNSphere)
+    rightPec.geometry?.firstMaterial = bodyMaterial()
+    rightPec.position = SCNVector3(0.16, 0.30, 0.18)
+    opponentTorso.addChildNode(rightPec)
+
+    // Neck — small connector between torso and head so the head
+    // isn't visually floating above the chest.
+    let neckGeo = SCNCylinder(radius: 0.08, height: 0.12)
+    neckGeo.firstMaterial = bodyMaterial()
+    let neck = SCNNode(geometry: neckGeo)
+    neck.position = SCNVector3(0, 1.55, 0)
+    root.addChildNode(neck)
+
+    // Head — slightly egg-shaped skull with full face features.
+    opponentHead = makeOpponentHead()
     opponentHead.position = SCNVector3(0, 1.75, 0)
     root.addChildNode(opponentHead)
 
     // Trunks — wide short cylinder around the hips.
-    let trunksGeo = SCNCylinder(radius: 0.34, height: 0.40)
+    let trunksGeo = SCNCylinder(radius: 0.36, height: 0.40)
     trunksGeo.firstMaterial = trunksMaterial()
     opponentTrunks = SCNNode(geometry: trunksGeo)
     opponentTrunks.position = SCNVector3(0, 0.55, 0)
     root.addChildNode(opponentTrunks)
 
-    // Legs — two narrower capsules.
-    let legGeo = SCNCapsule(capRadius: 0.13, height: 0.55)
-    legGeo.firstMaterial = bodyMaterial()
-    let leftLeg = SCNNode(geometry: legGeo)
-    leftLeg.position = SCNVector3(-0.16, 0.18, 0)
-    root.addChildNode(leftLeg)
-    let rightLeg = SCNNode(geometry: legGeo.copy() as! SCNCapsule)
-    rightLeg.geometry?.firstMaterial = bodyMaterial()
-    rightLeg.position = SCNVector3(0.16, 0.18, 0)
-    root.addChildNode(rightLeg)
+    // Waistband stripe — thin contrast cylinder at the top of the
+    // trunks. Kept as a child so it moves with the trunks.
+    let beltGeo = SCNCylinder(radius: 0.365, height: 0.07)
+    let beltMat = SCNMaterial()
+    beltMat.diffuse.contents = UIColor.white
+    beltMat.roughness.contents = 0.5
+    beltGeo.firstMaterial = beltMat
+    let belt = SCNNode(geometry: beltGeo)
+    belt.position = SCNVector3(0, 0.18, 0)
+    opponentTrunks.addChildNode(belt)
 
-    // Arms + gloves (left / right). Each arm is a single capsule
-    // pointing FROM the shoulder TO the glove; we reposition it as a
-    // whole to extend toward the camera on incoming-attack telegraphs.
+    // Legs — upper + lower segment with a knee joint, plus boots.
+    addLeg(into: root, xOffset: -0.16)
+    addLeg(into: root, xOffset: 0.16)
+
+    // Arms — upper arm + elbow + forearm hierarchy. Positioned at
+    // the shoulders; geometry hangs down toward the gloves.
     opponentLeftArm = makeArmNode()
-    opponentLeftArm.position = SCNVector3(-0.36, 1.40, 0)
+    opponentLeftArm.position = SCNVector3(-0.42, 1.42, 0)
     root.addChildNode(opponentLeftArm)
+    opponentRightArm = makeArmNode()
+    opponentRightArm.position = SCNVector3(0.42, 1.42, 0)
+    root.addChildNode(opponentRightArm)
+
+    // Gloves — separate top-level nodes so they can extend
+    // independently on incoming-attack telegraphs.
     opponentLeftGlove = makeGloveNode(playerSide: false)
     opponentLeftGlove.position = opponentGuardLeftLocal
     root.addChildNode(opponentLeftGlove)
-
-    opponentRightArm = makeArmNode()
-    opponentRightArm.position = SCNVector3(0.36, 1.40, 0)
-    root.addChildNode(opponentRightArm)
     opponentRightGlove = makeGloveNode(playerSide: false)
     opponentRightGlove.position = opponentGuardRightLocal
     root.addChildNode(opponentRightGlove)
   }
 
-  private func makeArmNode() -> SCNNode {
-    let upper = SCNCapsule(capRadius: 0.10, height: 0.45)
-    upper.firstMaterial = bodyMaterial()
-    let node = SCNNode(geometry: upper)
-    return node
+  /// Builds a stylized head with eyes, brows, nose, mouth, ears, hair,
+  /// and a defined chin. The PARENT node still carries the main skull
+  /// geometry so `applyTheme` can re-tint the skin colour by writing
+  /// to `opponentHead.geometry?.firstMaterial?.diffuse`.
+  private func makeOpponentHead() -> SCNNode {
+    let skullGeo = SCNSphere(radius: 0.22)
+    skullGeo.firstMaterial = bodyMaterial()
+    let head = SCNNode(geometry: skullGeo)
+    // Slight forward squash so the face has a flat-ish presentation.
+    head.scale = SCNVector3(1.0, 1.05, 0.95)
+
+    // Chin — a smaller sphere just below the skull, slightly forward.
+    let chinGeo = SCNSphere(radius: 0.09)
+    chinGeo.firstMaterial = bodyMaterial()
+    let chin = SCNNode(geometry: chinGeo)
+    chin.position = SCNVector3(0, -0.18, 0.06)
+    head.addChildNode(chin)
+
+    // Hair — dark short cap on top, modeled as a flattened sphere.
+    let hairGeo = SCNSphere(radius: 0.20)
+    let hairMat = SCNMaterial()
+    hairMat.diffuse.contents = UIColor(red: 0.10, green: 0.07, blue: 0.05, alpha: 1)
+    hairMat.roughness.contents = 0.85
+    hairGeo.firstMaterial = hairMat
+    let hair = SCNNode(geometry: hairGeo)
+    hair.position = SCNVector3(0, 0.07, -0.01)
+    hair.scale = SCNVector3(1.05, 0.65, 1.05)
+    head.addChildNode(hair)
+
+    // Eyebrows — thin dark boxes above each eye, slightly tilted in.
+    addEyebrow(to: head, x: -0.075, tiltZ: -0.18)
+    addEyebrow(to: head, x: 0.075, tiltZ: 0.18)
+
+    // Eyes — white spheres + smaller dark pupils in front.
+    addEye(to: head, x: -0.075)
+    addEye(to: head, x: 0.075)
+
+    // Nose — small sphere bump in the centre of the face. Avoids
+    // the SCNCone-rotation gymnastics; reads fine.
+    let noseGeo = SCNSphere(radius: 0.025)
+    noseGeo.firstMaterial = bodyMaterial()
+    let nose = SCNNode(geometry: noseGeo)
+    nose.position = SCNVector3(0, -0.02, 0.215)
+    head.addChildNode(nose)
+    // A tiny shadow under the nose for definition.
+    let nostrilGeo = SCNBox(width: 0.018, height: 0.005, length: 0.008, chamferRadius: 0)
+    let nostrilMat = SCNMaterial()
+    nostrilMat.diffuse.contents = UIColor(white: 0.10, alpha: 1)
+    nostrilGeo.firstMaterial = nostrilMat
+    let nostril = SCNNode(geometry: nostrilGeo)
+    nostril.position = SCNVector3(0, -0.05, 0.225)
+    head.addChildNode(nostril)
+
+    // Mouth — thin dark box, set into the chin area.
+    let mouthGeo = SCNBox(width: 0.07, height: 0.012, length: 0.005, chamferRadius: 0.002)
+    let mouthMat = SCNMaterial()
+    mouthMat.diffuse.contents = UIColor(red: 0.45, green: 0.10, blue: 0.10, alpha: 1)
+    mouthGeo.firstMaterial = mouthMat
+    let mouth = SCNNode(geometry: mouthGeo)
+    mouth.position = SCNVector3(0, -0.10, 0.21)
+    head.addChildNode(mouth)
+
+    // Ears — small spheres on each side of the head, flattened
+    // along X so they hug the skull.
+    addEar(to: head, x: -0.21)
+    addEar(to: head, x: 0.21)
+
+    return head
   }
 
-  private func makeGloveNode(playerSide: Bool = true) -> SCNNode {
-    let geo = SCNSphere(radius: 0.16)
+  private func addEyebrow(to head: SCNNode, x: Float, tiltZ: Float) {
+    let geo = SCNBox(width: 0.075, height: 0.014, length: 0.018, chamferRadius: 0.003)
     let mat = SCNMaterial()
-    mat.diffuse.contents = playerSide ? UIColor.blue : UIColor.red
-    mat.roughness.contents = 0.55
+    mat.diffuse.contents = UIColor(red: 0.10, green: 0.07, blue: 0.05, alpha: 1)
     geo.firstMaterial = mat
-    return SCNNode(geometry: geo)
+    let brow = SCNNode(geometry: geo)
+    brow.position = SCNVector3(x, 0.06, 0.20)
+    brow.eulerAngles = SCNVector3(0, 0, tiltZ)
+    head.addChildNode(brow)
+  }
+
+  private func addEye(to head: SCNNode, x: Float) {
+    let whiteGeo = SCNSphere(radius: 0.030)
+    let whiteMat = SCNMaterial()
+    whiteMat.diffuse.contents = UIColor.white
+    whiteGeo.firstMaterial = whiteMat
+    let white = SCNNode(geometry: whiteGeo)
+    white.position = SCNVector3(x, 0.02, 0.195)
+    head.addChildNode(white)
+
+    let pupilGeo = SCNSphere(radius: 0.013)
+    let pupilMat = SCNMaterial()
+    pupilMat.diffuse.contents = UIColor(white: 0.05, alpha: 1)
+    pupilGeo.firstMaterial = pupilMat
+    let pupil = SCNNode(geometry: pupilGeo)
+    pupil.position = SCNVector3(x, 0.02, 0.215)
+    head.addChildNode(pupil)
+  }
+
+  private func addEar(to head: SCNNode, x: Float) {
+    let geo = SCNSphere(radius: 0.045)
+    geo.firstMaterial = bodyMaterial()
+    let ear = SCNNode(geometry: geo)
+    ear.position = SCNVector3(x, 0.01, 0)
+    ear.scale = SCNVector3(0.5, 1.0, 0.85)
+    head.addChildNode(ear)
+  }
+
+  /// Builds a single leg: upper leg + knee joint + lower leg + boot.
+  private func addLeg(into root: SCNNode, xOffset: Float) {
+    let upper = SCNCapsule(capRadius: 0.13, height: 0.40)
+    upper.firstMaterial = bodyMaterial()
+    let upperNode = SCNNode(geometry: upper)
+    upperNode.position = SCNVector3(xOffset, 0.30, 0)
+    root.addChildNode(upperNode)
+
+    let knee = SCNSphere(radius: 0.10)
+    knee.firstMaterial = bodyMaterial()
+    let kneeNode = SCNNode(geometry: knee)
+    kneeNode.position = SCNVector3(xOffset, 0.10, 0.02)
+    root.addChildNode(kneeNode)
+
+    let lower = SCNCapsule(capRadius: 0.10, height: 0.30)
+    lower.firstMaterial = bodyMaterial()
+    let lowerNode = SCNNode(geometry: lower)
+    lowerNode.position = SCNVector3(xOffset, -0.05, 0.02)
+    root.addChildNode(lowerNode)
+
+    // Boot — a small dark box at the bottom of the leg.
+    let bootGeo = SCNBox(width: 0.18, height: 0.10, length: 0.24, chamferRadius: 0.04)
+    let bootMat = SCNMaterial()
+    bootMat.diffuse.contents = UIColor(white: 0.08, alpha: 1)
+    bootMat.roughness.contents = 0.7
+    bootGeo.firstMaterial = bootMat
+    let bootNode = SCNNode(geometry: bootGeo)
+    bootNode.position = SCNVector3(xOffset, -0.22, 0.05)
+    root.addChildNode(bootNode)
+  }
+
+  /// Builds a multi-segment arm: upper arm + elbow joint + forearm.
+  /// Hangs DOWN from the shoulder origin (Y=0 at the shoulder; the
+  /// forearm ends near Y = -0.6).
+  private func makeArmNode() -> SCNNode {
+    let arm = SCNNode()
+
+    let upper = SCNCapsule(capRadius: 0.085, height: 0.32)
+    upper.firstMaterial = bodyMaterial()
+    let upperNode = SCNNode(geometry: upper)
+    upperNode.position = SCNVector3(0, -0.16, 0)
+    arm.addChildNode(upperNode)
+
+    let elbow = SCNSphere(radius: 0.075)
+    elbow.firstMaterial = bodyMaterial()
+    let elbowNode = SCNNode(geometry: elbow)
+    elbowNode.position = SCNVector3(0, -0.34, 0)
+    arm.addChildNode(elbowNode)
+
+    let forearm = SCNCapsule(capRadius: 0.075, height: 0.28)
+    forearm.firstMaterial = bodyMaterial()
+    let forearmNode = SCNNode(geometry: forearm)
+    forearmNode.position = SCNVector3(0, -0.50, 0)
+    arm.addChildNode(forearmNode)
+    return arm
+  }
+
+  /// Builds a boxing-glove node: a slightly oval main body in the
+  /// theme's glove colour, with a darker wrist cuff stuck behind it
+  /// and a small thumb bump up top so it reads as a glove rather
+  /// than a featureless ball.
+  private func makeGloveNode(playerSide: Bool = true) -> SCNNode {
+    let mainGeo = SCNSphere(radius: 0.17)
+    mainGeo.firstMaterial = gloveMaterial(playerSide: playerSide)
+    let glove = SCNNode(geometry: mainGeo)
+    // Squash slightly so the silhouette is a fat oval, not a perfect
+    // ball. Scale ON THE NODE applies to its children too — both the
+    // cuff and thumb get the same proportions, which is what we want.
+    glove.scale = SCNVector3(1.05, 0.95, 1.15)
+
+    // Cuff — flatter cylinder at the back of the glove (toward the
+    // wrist). Cuff is a contrast colour, NOT themed — every theme
+    // gets the same dark wristband.
+    let cuffGeo = SCNCylinder(radius: 0.13, height: 0.06)
+    let cuffMat = SCNMaterial()
+    cuffMat.diffuse.contents = UIColor(white: 0.12, alpha: 1)
+    cuffMat.roughness.contents = 0.6
+    cuffGeo.firstMaterial = cuffMat
+    let cuff = SCNNode(geometry: cuffGeo)
+    cuff.eulerAngles = SCNVector3(Float.pi / 2, 0, 0)
+    cuff.position = SCNVector3(0, 0, -0.15)
+    glove.addChildNode(cuff)
+
+    // Thumb bump — small sphere on top-front of the glove. Same
+    // glove material so it re-tints with the main body on theme swap.
+    let thumbGeo = SCNSphere(radius: 0.06)
+    thumbGeo.firstMaterial = gloveMaterial(playerSide: playerSide)
+    let thumb = SCNNode(geometry: thumbGeo)
+    thumb.position = SCNVector3(0, 0.10, 0.07)
+    glove.addChildNode(thumb)
+    return glove
   }
 
   private func bodyMaterial() -> SCNMaterial {
     let m = SCNMaterial()
     m.diffuse.contents = UIColor(red: 0.78, green: 0.55, blue: 0.40, alpha: 1)
     m.roughness.contents = 0.6
+    skinMaterials.append(m)
     return m
   }
 
@@ -236,6 +458,22 @@ final class BoxingSceneController: NSObject {
     let m = SCNMaterial()
     m.diffuse.contents = UIColor.darkGray
     m.roughness.contents = 0.5
+    trunksMaterials.append(m)
+    return m
+  }
+
+  /// Opponent / player glove material factory. Registers the material
+  /// into the matching glove-tracked array so applyTheme can recolour
+  /// every glove sub-piece (main body + thumb) on a theme change.
+  private func gloveMaterial(playerSide: Bool) -> SCNMaterial {
+    let m = SCNMaterial()
+    m.diffuse.contents = playerSide ? UIColor.blue : UIColor.red
+    m.roughness.contents = 0.55
+    if playerSide {
+      playerGloveMaterials.append(m)
+    } else {
+      opponentGloveMaterials.append(m)
+    }
     return m
   }
 
@@ -258,15 +496,13 @@ final class BoxingSceneController: NSObject {
   }
 
   private func applyTheme(_ theme: BoxingSceneTheme) {
-    opponentTorso.geometry?.firstMaterial?.diffuse.contents = theme.bodyColor
-    opponentHead.geometry?.firstMaterial?.diffuse.contents = theme.bodyColor
-    opponentLeftArm.geometry?.firstMaterial?.diffuse.contents = theme.bodyColor
-    opponentRightArm.geometry?.firstMaterial?.diffuse.contents = theme.bodyColor
-    opponentTrunks.geometry?.firstMaterial?.diffuse.contents = theme.trunksColor
-    opponentLeftGlove.geometry?.firstMaterial?.diffuse.contents = theme.opponentGloveColor
-    opponentRightGlove.geometry?.firstMaterial?.diffuse.contents = theme.opponentGloveColor
-    playerLeftGlove.geometry?.firstMaterial?.diffuse.contents = theme.playerGloveColor
-    playerRightGlove.geometry?.firstMaterial?.diffuse.contents = theme.playerGloveColor
+    // Walk the registered materials so every skin / trunks / glove
+    // sub-piece (face features that share the body tone, segmented
+    // arms, leg parts, glove thumb, etc.) re-tints together.
+    for m in skinMaterials { m.diffuse.contents = theme.bodyColor }
+    for m in trunksMaterials { m.diffuse.contents = theme.trunksColor }
+    for m in opponentGloveMaterials { m.diffuse.contents = theme.opponentGloveColor }
+    for m in playerGloveMaterials { m.diffuse.contents = theme.playerGloveColor }
     floorNode.geometry?.firstMaterial?.diffuse.contents = theme.floorColor
     keyLightNode.light?.color = theme.keyLightColor
     ambientLightNode.light?.color = theme.ambientColor
