@@ -7,47 +7,95 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0229A441F96690BB179F9CE0 /* MotionClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3015387732FC86391673FEFC /* MotionClassifier.swift */; };
+		04A095977CA356A7BD617DCA /* PingPongGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66490A5375027C18E299220F /* PingPongGame.swift */; };
 		0B0D43D05DD7AA9061DBBC52 /* MWDATCore in Frameworks */ = {isa = PBXBuildFile; productRef = 56D471E4C1D0316E974B9E9D /* MWDATCore */; };
-		1A238EAD9D1126CF37177585 /* ClaudeConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0730CD29BE25A17AA11DBD6B /* ClaudeConfig.swift */; };
-		25A8B74F9507C6E8039685DE /* SessionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57FAB5518FCC84C79B8DCA9A /* SessionViewModel.swift */; };
 		26DF4D6AB4300A244E2F9993 /* MWDATCamera in Frameworks */ = {isa = PBXBuildFile; productRef = F89EE55D2F5EFD824C5EAAA1 /* MWDATCamera */; };
+		2A77669B0885E5690DB0E5B9 /* GestureRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A8D0C3C3C22FDAC032A85DD /* GestureRecorder.swift */; };
+		2E15B4D77CEEF51A0D721B79 /* ShareCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF54E20B5EDB91B4B94884D /* ShareCardView.swift */; };
 		2F08588A0FA5377BED01C1DB /* FrameSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 704D8A46187AD105F8BE0E3F /* FrameSource.swift */; };
+		31583FD9A5085861FD73CEF4 /* TennisVenues.swift in Sources */ = {isa = PBXBuildFile; fileRef = F834FD6E9D77D33AC1F4DFAC /* TennisVenues.swift */; };
+		3F6F0FE0DACC7F7AAE94194A /* FruitSlashVenues.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CD39D9F07965ACDE648C66F /* FruitSlashVenues.swift */; };
 		3FDF7F0AAA360B8773806769 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6CC34BA60D99796648D08667 /* Preview Assets.xcassets */; };
-		469CFAAD6292414FB1833B6F /* ModeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F97A69C4B33A208E5B740199 /* ModeManager.swift */; };
-		513C996089182BCDA9EC21E6 /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6399D29511D56878F01F5204 /* CameraManager.swift */; };
-		6405C8BC1770E52F7FF48717 /* SpeechManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED8607622DE3C3A56C5185B5 /* SpeechManager.swift */; };
-		724F434A533F1D7D63507D0A /* ClaudeBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F3069E25AC77AD72DFEB548 /* ClaudeBridge.swift */; };
+		55B34005F5174962FB930C93 /* PingPongVenues.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7AD775A1FBBCB1AA720652C /* PingPongVenues.swift */; };
+		5E1CD10EEF09F9EDC673581F /* BowlingGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = D078BD3D9A597903F2CDACC3 /* BowlingGame.swift */; };
+		61AA0197E1DCB80E5534BF3D /* FruitSlashGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F0D7111559988CE71483192 /* FruitSlashGame.swift */; };
+		6B262B3F0BA7ACE2B427736E /* GlassesSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DF4D40126DEF5014F50E67F /* GlassesSetupView.swift */; };
+		710F56F668098F31727F41B0 /* GestureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FF0506A15276F33DBDC1C22 /* GestureEngine.swift */; };
 		7B9EB5C35AA99FFC8E91F8B2 /* RayBanManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0160BE25F91F5DE8B717653 /* RayBanManager.swift */; };
-		83375B61622FFB28135BDCA2 /* TranscriptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0BC356D66DFF1B96A3C1699 /* TranscriptView.swift */; };
-		856B82DACC849A0DC24A9525 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04B5455D3CE56E037F92BB98 /* SettingsView.swift */; };
+		8734E2624EAD7162EE5DE1A2 /* GameAudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 871B5E6A2DC77E6CDF6F63B3 /* GameAudio.swift */; };
+		8AF41AF815A9B9DBF79324E1 /* ProgressStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A761184267980942BC955F3 /* ProgressStore.swift */; };
+		8DEA96294AD4A1C68EBF910E /* AppIconManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A76A878AABFBA740BC142E /* AppIconManager.swift */; };
+		8F8F26658FBA4F72C682EA63 /* TennisGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA383D3AF2B7F2F9017E42D7 /* TennisGame.swift */; };
+		91EF45669BD1FE1134583CB6 /* GameSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94E60DCF76CAB1919B96BB9A /* GameSessionView.swift */; };
 		93FFEB466EE30C76CB38732E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5F8AA23E7B6922ACB9BDD28E /* Assets.xcassets */; };
-		95E4B95F9EF6DC5CB78C8148 /* AudioSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1533204F4B0090BB686560D /* AudioSessionManager.swift */; };
-		98363E750004AD195EEF95DE /* VisionMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43B211DB3670DC6B1096A7F0 /* VisionMode.swift */; };
+		981E8AA608802E6E6A955FCF /* Game.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B937D3B1565BD030D47B9DE /* Game.swift */; };
 		9864E1522823865D7292FA82 /* ClaudeVisionApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D80B4A559F7D180D8DCE6033 /* ClaudeVisionApp.swift */; };
-		A2C392605B594915241F310C /* ChatModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485A5E24F72ECE1BCAB326AD /* ChatModels.swift */; };
+		AA875A1E28A9B92161751A5D /* ArcheryVenues.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0AACC052C5B3B85A599088E /* ArcheryVenues.swift */; };
+		AA89115CB629A0F228706FC9 /* AnimeStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB1873986A1185D916CC7800 /* AnimeStyle.swift */; };
+		ABE4642C648FF01E3FA76550 /* DailyChallenge.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE4EAE7635BF07443ED44384 /* DailyChallenge.swift */; };
+		B16E22E3D5635B45CDA5527E /* UnlockCelebration.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED14DBCA12F0F32259D59338 /* UnlockCelebration.swift */; };
+		BB77BEBD9342F20CF03D3E17 /* GestureEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D6586F110D7EC927F2A34C2 /* GestureEvent.swift */; };
+		C327AE4F92F9EF84D41BDA91 /* DebugPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED4F43EA2E5A25E3D215A392 /* DebugPanelView.swift */; };
+		C4F5333E0BAE35F97D08CB1C /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 886F034AA5C4A50DE8F11AAA /* HomeView.swift */; };
+		C585A31BBA2AA3A0C6CE311C /* BowlingVenues.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D99EBB5360A4830812A4A16 /* BowlingVenues.swift */; };
 		C7D9F412F3607F657FC2F90A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92D88A83F09D5107BD2F91B6 /* ContentView.swift */; };
+		CA00303E3F2897D249C97617 /* DailyChallengeCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBA81D3448D2E8D889210B60 /* DailyChallengeCard.swift */; };
+		CADFE639AE65E9828CFE8C08 /* Venue.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9A58FF9BA5C906542805585 /* Venue.swift */; };
+		D318BDFB534591B00DE2902E /* GameCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EBA2331D4EFFFADA46E6B38 /* GameCoordinator.swift */; };
+		D86CC47D8E4FBFA854AC7A50 /* BoxingVenues.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35631D67CD4D879B5B42A10A /* BoxingVenues.swift */; };
+		DA7A305C2AC68B9BCCF469B7 /* BoxingGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55B7BB9F20AE5B6C16405918 /* BoxingGame.swift */; };
+		E12306D922984A6813198E0E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 005CB362591CEF82F976089D /* Theme.swift */; };
+		EF22011091DAB224D43F0D0F /* ArcheryGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7450C70EEB82980645E55B72 /* ArcheryGame.swift */; };
+		F1A52CF077F28868BE7DA1CD /* TestScenarios.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70B272A2340AACC654015328 /* TestScenarios.swift */; };
+		F72AA7EF417E1CAAE1A03C07 /* LaunchSplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53FCA12547DBC44C1F0AD38 /* LaunchSplashView.swift */; };
+		FCE3D75CC394FD3CAFFB827B /* VenueSelectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D66084323CBDF0F0A6D269F1 /* VenueSelectView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		04B5455D3CE56E037F92BB98 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		0730CD29BE25A17AA11DBD6B /* ClaudeConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeConfig.swift; sourceTree = "<group>"; };
-		3F3069E25AC77AD72DFEB548 /* ClaudeBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeBridge.swift; sourceTree = "<group>"; };
-		43B211DB3670DC6B1096A7F0 /* VisionMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisionMode.swift; sourceTree = "<group>"; };
-		485A5E24F72ECE1BCAB326AD /* ChatModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatModels.swift; sourceTree = "<group>"; };
-		57FAB5518FCC84C79B8DCA9A /* SessionViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionViewModel.swift; sourceTree = "<group>"; };
+		005CB362591CEF82F976089D /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		0D99EBB5360A4830812A4A16 /* BowlingVenues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BowlingVenues.swift; sourceTree = "<group>"; };
+		0EBA2331D4EFFFADA46E6B38 /* GameCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCoordinator.swift; sourceTree = "<group>"; };
+		0FF0506A15276F33DBDC1C22 /* GestureEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GestureEngine.swift; sourceTree = "<group>"; };
+		2CD39D9F07965ACDE648C66F /* FruitSlashVenues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FruitSlashVenues.swift; sourceTree = "<group>"; };
+		3015387732FC86391673FEFC /* MotionClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionClassifier.swift; sourceTree = "<group>"; };
+		35631D67CD4D879B5B42A10A /* BoxingVenues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoxingVenues.swift; sourceTree = "<group>"; };
+		3B937D3B1565BD030D47B9DE /* Game.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Game.swift; sourceTree = "<group>"; };
+		3DF4D40126DEF5014F50E67F /* GlassesSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassesSetupView.swift; sourceTree = "<group>"; };
+		3F0D7111559988CE71483192 /* FruitSlashGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FruitSlashGame.swift; sourceTree = "<group>"; };
+		55B7BB9F20AE5B6C16405918 /* BoxingGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoxingGame.swift; sourceTree = "<group>"; };
 		5F8AA23E7B6922ACB9BDD28E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		6399D29511D56878F01F5204 /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
+		66490A5375027C18E299220F /* PingPongGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PingPongGame.swift; sourceTree = "<group>"; };
 		6CC34BA60D99796648D08667 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		704D8A46187AD105F8BE0E3F /* FrameSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameSource.swift; sourceTree = "<group>"; };
+		70B272A2340AACC654015328 /* TestScenarios.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestScenarios.swift; sourceTree = "<group>"; };
+		7450C70EEB82980645E55B72 /* ArcheryGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcheryGame.swift; sourceTree = "<group>"; };
+		7A761184267980942BC955F3 /* ProgressStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressStore.swift; sourceTree = "<group>"; };
 		8206037DFED6213BCCDF3719 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		871B5E6A2DC77E6CDF6F63B3 /* GameAudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameAudio.swift; sourceTree = "<group>"; };
+		886F034AA5C4A50DE8F11AAA /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		92D88A83F09D5107BD2F91B6 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		98E55A0878E3210165D23655 /* ClaudeVision.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClaudeVision.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		D0BC356D66DFF1B96A3C1699 /* TranscriptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptView.swift; sourceTree = "<group>"; };
-		D1533204F4B0090BB686560D /* AudioSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSessionManager.swift; sourceTree = "<group>"; };
+		94E60DCF76CAB1919B96BB9A /* GameSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSessionView.swift; sourceTree = "<group>"; };
+		98E55A0878E3210165D23655 /* ClaudeVision.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ClaudeVision.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9A8D0C3C3C22FDAC032A85DD /* GestureRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GestureRecorder.swift; sourceTree = "<group>"; };
+		9D6586F110D7EC927F2A34C2 /* GestureEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GestureEvent.swift; sourceTree = "<group>"; };
+		A0AACC052C5B3B85A599088E /* ArcheryVenues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcheryVenues.swift; sourceTree = "<group>"; };
+		A53FCA12547DBC44C1F0AD38 /* LaunchSplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchSplashView.swift; sourceTree = "<group>"; };
+		AA383D3AF2B7F2F9017E42D7 /* TennisGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TennisGame.swift; sourceTree = "<group>"; };
+		AFF54E20B5EDB91B4B94884D /* ShareCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardView.swift; sourceTree = "<group>"; };
+		BE4EAE7635BF07443ED44384 /* DailyChallenge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyChallenge.swift; sourceTree = "<group>"; };
+		C7AD775A1FBBCB1AA720652C /* PingPongVenues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PingPongVenues.swift; sourceTree = "<group>"; };
+		C9A58FF9BA5C906542805585 /* Venue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Venue.swift; sourceTree = "<group>"; };
+		CBA81D3448D2E8D889210B60 /* DailyChallengeCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyChallengeCard.swift; sourceTree = "<group>"; };
+		D078BD3D9A597903F2CDACC3 /* BowlingGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BowlingGame.swift; sourceTree = "<group>"; };
+		D1A76A878AABFBA740BC142E /* AppIconManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconManager.swift; sourceTree = "<group>"; };
+		D66084323CBDF0F0A6D269F1 /* VenueSelectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenueSelectView.swift; sourceTree = "<group>"; };
 		D80B4A559F7D180D8DCE6033 /* ClaudeVisionApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeVisionApp.swift; sourceTree = "<group>"; };
-		ED8607622DE3C3A56C5185B5 /* SpeechManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechManager.swift; sourceTree = "<group>"; };
+		DB1873986A1185D916CC7800 /* AnimeStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimeStyle.swift; sourceTree = "<group>"; };
+		ED14DBCA12F0F32259D59338 /* UnlockCelebration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockCelebration.swift; sourceTree = "<group>"; };
+		ED4F43EA2E5A25E3D215A392 /* DebugPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugPanelView.swift; sourceTree = "<group>"; };
 		F0160BE25F91F5DE8B717653 /* RayBanManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RayBanManager.swift; sourceTree = "<group>"; };
-		F97A69C4B33A208E5B740199 /* ModeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModeManager.swift; sourceTree = "<group>"; };
+		F834FD6E9D77D33AC1F4DFAC /* TennisVenues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TennisVenues.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,15 +111,31 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		0874139E64E32E93EA1F8905 /* Models */ = {
+		0A9335D6E8C046FCCA08AE8D /* Venues */ = {
 			isa = PBXGroup;
 			children = (
-				485A5E24F72ECE1BCAB326AD /* ChatModels.swift */,
-				0730CD29BE25A17AA11DBD6B /* ClaudeConfig.swift */,
-				F97A69C4B33A208E5B740199 /* ModeManager.swift */,
-				43B211DB3670DC6B1096A7F0 /* VisionMode.swift */,
+				A0AACC052C5B3B85A599088E /* ArcheryVenues.swift */,
+				0D99EBB5360A4830812A4A16 /* BowlingVenues.swift */,
+				35631D67CD4D879B5B42A10A /* BoxingVenues.swift */,
+				2CD39D9F07965ACDE648C66F /* FruitSlashVenues.swift */,
+				C7AD775A1FBBCB1AA720652C /* PingPongVenues.swift */,
+				F834FD6E9D77D33AC1F4DFAC /* TennisVenues.swift */,
+				C9A58FF9BA5C906542805585 /* Venue.swift */,
 			);
-			path = Models;
+			path = Venues;
+			sourceTree = "<group>";
+		};
+		1380B471AEF9EE8643947E06 /* Games */ = {
+			isa = PBXGroup;
+			children = (
+				7450C70EEB82980645E55B72 /* ArcheryGame.swift */,
+				D078BD3D9A597903F2CDACC3 /* BowlingGame.swift */,
+				55B7BB9F20AE5B6C16405918 /* BoxingGame.swift */,
+				3F0D7111559988CE71483192 /* FruitSlashGame.swift */,
+				66490A5375027C18E299220F /* PingPongGame.swift */,
+				AA383D3AF2B7F2F9017E42D7 /* TennisGame.swift */,
+			);
+			path = Games;
 			sourceTree = "<group>";
 		};
 		1AC8D3445CECE9610F600843 = {
@@ -82,22 +146,41 @@
 			);
 			sourceTree = "<group>";
 		};
+		307F40ABC1D46CC50F9980BE /* Gaming */ = {
+			isa = PBXGroup;
+			children = (
+				BE4EAE7635BF07443ED44384 /* DailyChallenge.swift */,
+				3B937D3B1565BD030D47B9DE /* Game.swift */,
+				0EBA2331D4EFFFADA46E6B38 /* GameCoordinator.swift */,
+				0FF0506A15276F33DBDC1C22 /* GestureEngine.swift */,
+				9D6586F110D7EC927F2A34C2 /* GestureEvent.swift */,
+				9A8D0C3C3C22FDAC032A85DD /* GestureRecorder.swift */,
+				3015387732FC86391673FEFC /* MotionClassifier.swift */,
+				7A761184267980942BC955F3 /* ProgressStore.swift */,
+				70B272A2340AACC654015328 /* TestScenarios.swift */,
+				1380B471AEF9EE8643947E06 /* Games */,
+				0A9335D6E8C046FCCA08AE8D /* Venues */,
+			);
+			path = Gaming;
+			sourceTree = "<group>";
+		};
 		954913A80229FAA275E99FD1 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				DB1873986A1185D916CC7800 /* AnimeStyle.swift */,
 				92D88A83F09D5107BD2F91B6 /* ContentView.swift */,
-				04B5455D3CE56E037F92BB98 /* SettingsView.swift */,
-				D0BC356D66DFF1B96A3C1699 /* TranscriptView.swift */,
+				CBA81D3448D2E8D889210B60 /* DailyChallengeCard.swift */,
+				ED4F43EA2E5A25E3D215A392 /* DebugPanelView.swift */,
+				94E60DCF76CAB1919B96BB9A /* GameSessionView.swift */,
+				3DF4D40126DEF5014F50E67F /* GlassesSetupView.swift */,
+				886F034AA5C4A50DE8F11AAA /* HomeView.swift */,
+				A53FCA12547DBC44C1F0AD38 /* LaunchSplashView.swift */,
+				AFF54E20B5EDB91B4B94884D /* ShareCardView.swift */,
+				005CB362591CEF82F976089D /* Theme.swift */,
+				ED14DBCA12F0F32259D59338 /* UnlockCelebration.swift */,
+				D66084323CBDF0F0A6D269F1 /* VenueSelectView.swift */,
 			);
 			path = Views;
-			sourceTree = "<group>";
-		};
-		9C4E27CA92ADAE4EF85CCFDD /* ViewModels */ = {
-			isa = PBXGroup;
-			children = (
-				57FAB5518FCC84C79B8DCA9A /* SessionViewModel.swift */,
-			);
-			path = ViewModels;
 			sourceTree = "<group>";
 		};
 		A89D041F911DC9E0739EB6C0 /* Products */ = {
@@ -111,12 +194,10 @@
 		BCA54CF6CF615CFD7E8C7D4D /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				D1533204F4B0090BB686560D /* AudioSessionManager.swift */,
-				6399D29511D56878F01F5204 /* CameraManager.swift */,
-				3F3069E25AC77AD72DFEB548 /* ClaudeBridge.swift */,
+				D1A76A878AABFBA740BC142E /* AppIconManager.swift */,
 				704D8A46187AD105F8BE0E3F /* FrameSource.swift */,
+				871B5E6A2DC77E6CDF6F63B3 /* GameAudio.swift */,
 				F0160BE25F91F5DE8B717653 /* RayBanManager.swift */,
-				ED8607622DE3C3A56C5185B5 /* SpeechManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -135,10 +216,9 @@
 				5F8AA23E7B6922ACB9BDD28E /* Assets.xcassets */,
 				D80B4A559F7D180D8DCE6033 /* ClaudeVisionApp.swift */,
 				8206037DFED6213BCCDF3719 /* Info.plist */,
-				0874139E64E32E93EA1F8905 /* Models */,
+				307F40ABC1D46CC50F9980BE /* Gaming */,
 				CC8DB6193D768868734D8483 /* Preview Content */,
 				BCA54CF6CF615CFD7E8C7D4D /* Services */,
-				9C4E27CA92ADAE4EF85CCFDD /* ViewModels */,
 				954913A80229FAA275E99FD1 /* Views */,
 			);
 			path = ClaudeVision;
@@ -176,6 +256,11 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					19BFFEED1742A8DB7B08397C = {
+						DevelopmentTeam = 4ZCZ9LLR98;
+					};
+				};
 			};
 			buildConfigurationList = E98FB211CB3D4B4671DFCB6E /* Build configuration list for PBXProject "ClaudeVision" */;
 			developmentRegion = en;
@@ -216,21 +301,45 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				95E4B95F9EF6DC5CB78C8148 /* AudioSessionManager.swift in Sources */,
-				513C996089182BCDA9EC21E6 /* CameraManager.swift in Sources */,
-				A2C392605B594915241F310C /* ChatModels.swift in Sources */,
-				724F434A533F1D7D63507D0A /* ClaudeBridge.swift in Sources */,
-				1A238EAD9D1126CF37177585 /* ClaudeConfig.swift in Sources */,
+				AA89115CB629A0F228706FC9 /* AnimeStyle.swift in Sources */,
+				8DEA96294AD4A1C68EBF910E /* AppIconManager.swift in Sources */,
+				EF22011091DAB224D43F0D0F /* ArcheryGame.swift in Sources */,
+				AA875A1E28A9B92161751A5D /* ArcheryVenues.swift in Sources */,
+				5E1CD10EEF09F9EDC673581F /* BowlingGame.swift in Sources */,
+				C585A31BBA2AA3A0C6CE311C /* BowlingVenues.swift in Sources */,
+				DA7A305C2AC68B9BCCF469B7 /* BoxingGame.swift in Sources */,
+				D86CC47D8E4FBFA854AC7A50 /* BoxingVenues.swift in Sources */,
 				9864E1522823865D7292FA82 /* ClaudeVisionApp.swift in Sources */,
 				C7D9F412F3607F657FC2F90A /* ContentView.swift in Sources */,
+				ABE4642C648FF01E3FA76550 /* DailyChallenge.swift in Sources */,
+				CA00303E3F2897D249C97617 /* DailyChallengeCard.swift in Sources */,
+				C327AE4F92F9EF84D41BDA91 /* DebugPanelView.swift in Sources */,
 				2F08588A0FA5377BED01C1DB /* FrameSource.swift in Sources */,
-				469CFAAD6292414FB1833B6F /* ModeManager.swift in Sources */,
+				61AA0197E1DCB80E5534BF3D /* FruitSlashGame.swift in Sources */,
+				3F6F0FE0DACC7F7AAE94194A /* FruitSlashVenues.swift in Sources */,
+				981E8AA608802E6E6A955FCF /* Game.swift in Sources */,
+				8734E2624EAD7162EE5DE1A2 /* GameAudio.swift in Sources */,
+				D318BDFB534591B00DE2902E /* GameCoordinator.swift in Sources */,
+				91EF45669BD1FE1134583CB6 /* GameSessionView.swift in Sources */,
+				710F56F668098F31727F41B0 /* GestureEngine.swift in Sources */,
+				BB77BEBD9342F20CF03D3E17 /* GestureEvent.swift in Sources */,
+				2A77669B0885E5690DB0E5B9 /* GestureRecorder.swift in Sources */,
+				6B262B3F0BA7ACE2B427736E /* GlassesSetupView.swift in Sources */,
+				C4F5333E0BAE35F97D08CB1C /* HomeView.swift in Sources */,
+				F72AA7EF417E1CAAE1A03C07 /* LaunchSplashView.swift in Sources */,
+				0229A441F96690BB179F9CE0 /* MotionClassifier.swift in Sources */,
+				04A095977CA356A7BD617DCA /* PingPongGame.swift in Sources */,
+				55B34005F5174962FB930C93 /* PingPongVenues.swift in Sources */,
+				8AF41AF815A9B9DBF79324E1 /* ProgressStore.swift in Sources */,
 				7B9EB5C35AA99FFC8E91F8B2 /* RayBanManager.swift in Sources */,
-				25A8B74F9507C6E8039685DE /* SessionViewModel.swift in Sources */,
-				856B82DACC849A0DC24A9525 /* SettingsView.swift in Sources */,
-				6405C8BC1770E52F7FF48717 /* SpeechManager.swift in Sources */,
-				83375B61622FFB28135BDCA2 /* TranscriptView.swift in Sources */,
-				98363E750004AD195EEF95DE /* VisionMode.swift in Sources */,
+				2E15B4D77CEEF51A0D721B79 /* ShareCardView.swift in Sources */,
+				8F8F26658FBA4F72C682EA63 /* TennisGame.swift in Sources */,
+				31583FD9A5085861FD73CEF4 /* TennisVenues.swift in Sources */,
+				F1A52CF077F28868BE7DA1CD /* TestScenarios.swift in Sources */,
+				E12306D922984A6813198E0E /* Theme.swift in Sources */,
+				B16E22E3D5635B45CDA5527E /* UnlockCelebration.swift in Sources */,
+				CADFE639AE65E9828CFE8C08 /* Venue.swift in Sources */,
+				FCE3D75CC394FD3CAFFB827B /* VenueSelectView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -306,7 +415,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 29QYBJKC4C;
+				DEVELOPMENT_TEAM = 4ZCZ9LLR98;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ClaudeVision/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -383,7 +492,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 29QYBJKC4C;
+				DEVELOPMENT_TEAM = 4ZCZ9LLR98;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ClaudeVision/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

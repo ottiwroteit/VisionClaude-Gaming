@@ -28,23 +28,49 @@ struct GameSessionView: View {
       return AnyView(EmptyView())
     }
     let venue = progress.currentVenue(for: game.id)
+    let isBowling = game.id == "bowling"
     return AnyView(
       ZStack {
         // Venue sits at the very back — the whole session plays
         // inside the selected environment.
         venue.background
           .ignoresSafeArea()
-        Color.black.opacity(0.35).ignoresSafeArea()
-        Halftone().ignoresSafeArea()
-        VStack(spacing: 16) {
-          topBar(for: game, venue: venue)
-          scoreRow(for: game)
+        Color.black.opacity(isBowling ? 0.10 : 0.35).ignoresSafeArea()
+        Halftone().ignoresSafeArea().opacity(isBowling ? 0.35 : 1)
+
+        if isBowling {
+          // Bowling gets a full-bleed lane with the chrome overlaid on
+          // top. Other games keep the windowed layout below.
           heroContainer(for: game)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .ignoresSafeArea()
+        }
+
+        VStack(spacing: isBowling ? 8 : 16) {
+          topBar(for: game, venue: venue)
+          if !isBowling {
+            scoreRow(for: game)
+            heroContainer(for: game)
+              .frame(maxWidth: .infinity, maxHeight: .infinity)
+          } else {
+            // Compact bowling chrome over the lane: scoreboard up top,
+            // everything else flexed to the bottom.
+            BowlingScoreboard(frames: bowlingFrames(game), total: game.score)
+              .fixedSize(horizontal: false, vertical: true)
+              .background(.ultraThinMaterial)
+              .clipShape(RoundedRectangle(cornerRadius: 6))
+            Spacer(minLength: 0)
+          }
           if !dismissedCoaching.contains(game.id) {
             coachingPanel(for: game)
+              .background(.ultraThinMaterial.opacity(isBowling ? 0.95 : 0))
+              .clipShape(
+                RoundedRectangle(cornerRadius: isBowling ? 12 : 0))
           }
           liveMotionBar(for: game)
+            .background(.ultraThinMaterial.opacity(isBowling ? 0.85 : 0))
+            .clipShape(
+              RoundedRectangle(cornerRadius: isBowling ? 8 : 0))
         }
         .padding(20)
 
@@ -106,6 +132,13 @@ struct GameSessionView: View {
 
   private var activeGame: (any Game)? {
     coordinator.allGames.first(where: { $0.id == coordinator.activeGameID })
+  }
+
+  /// Pulls the frame breakdown off the game when it's bowling — falls
+  /// back to an empty array for other game types so the helper can be
+  /// called unconditionally from the chrome layout.
+  private func bowlingFrames(_ game: any Game) -> [BowlingGame.FrameDisplay] {
+    (game as? BowlingGame)?.frameDisplays ?? []
   }
 
   private func tint(for game: any Game) -> Color {
@@ -356,179 +389,180 @@ private struct BowlingArt: View {
   @State private var shakeOffset: CGSize = .zero
 
   var body: some View {
-    VStack(spacing: 8) {
-      BowlingScoreboard(frames: game.frameDisplays, total: game.score)
-        .fixedSize(horizontal: false, vertical: true)
+    GeometryReader { outerGeo in
+      laneStack(outerGeo: outerGeo)
+    }
+    .ignoresSafeArea()
+  }
 
-      HStack {
-        Text("Frame \(game.frame)").font(.caption.bold())
-        Text("·").foregroundColor(Theme.textSecondary)
-        Text("Ball \(game.ballInFrame)").font(.caption.bold())
-        Spacer()
-        Text("\(game.pinsRemaining) pins")
-          .font(.caption2).foregroundColor(Theme.textSecondary)
-      }
-      .foregroundColor(Theme.textPrimary)
-      .padding(.horizontal, 4)
-
-      GeometryReader { geo in
-        ZStack {
-          // Lane trapezoid — narrow at the top (far), wide at the
-          // bottom (player) for forced perspective.
-          BowlingLaneShape()
-            .fill(
-              LinearGradient(
-                colors: [
-                  Color(red: 0.32, green: 0.22, blue: 0.12),  // far wood (deeper)
-                  Color(red: 0.68, green: 0.50, blue: 0.30),  // near wood (warmer)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-              )
+  @ViewBuilder
+  private func laneStack(outerGeo: GeometryProxy) -> some View {
+    GeometryReader { geo in
+      ZStack {
+        // Lane trapezoid — narrow at the top (far), wide at the
+        // bottom (player) for forced perspective.
+        BowlingLaneShape()
+          .fill(
+            LinearGradient(
+              colors: [
+                Color(red: 0.32, green: 0.22, blue: 0.12),  // far wood (deeper)
+                Color(red: 0.68, green: 0.50, blue: 0.30),  // near wood (warmer)
+              ],
+              startPoint: .top,
+              endPoint: .bottom
             )
-            .overlay(
-              // Wood-grain plank lines running down the lane.
-              BowlingLaneShape()
-                .clipShape(BowlingLaneShape())
-                .overlay(BowlingLaneGrain())
-                .opacity(0.25)
-            )
-            .overlay(
-              // Glossy reflective sheen — light vertical band centered.
-              BowlingLaneShape()
-                .fill(
-                  LinearGradient(
-                    colors: [
-                      Color.white.opacity(0.18),
-                      Color.white.opacity(0.0),
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                  )
+          )
+          .overlay(
+            // Wood-grain plank lines running down the lane.
+            BowlingLaneShape()
+              .clipShape(BowlingLaneShape())
+              .overlay(BowlingLaneGrain())
+              .opacity(0.25)
+          )
+          .overlay(
+            // Glossy reflective sheen — light vertical band centered.
+            BowlingLaneShape()
+              .fill(
+                LinearGradient(
+                  colors: [
+                    Color.white.opacity(0.18),
+                    Color.white.opacity(0.0),
+                  ],
+                  startPoint: .top,
+                  endPoint: .bottom
                 )
-                .blendMode(.screen)
-            )
-            .overlay(
-              BowlingLaneShape()
-                .stroke(Color.black.opacity(0.5), lineWidth: 1)
-            )
-
-          // Lane stripe down the middle for perspective hint.
-          BowlingLaneStripe()
-            .stroke(Color.white.opacity(0.18), lineWidth: 1)
-
-          // Gutters — recessed channels.
-          BowlingGutterShape(side: .left)
-            .fill(
-              LinearGradient(
-                colors: [Color.black, Color(white: 0.15)],
-                startPoint: .leading, endPoint: .trailing
               )
-            )
-          BowlingGutterShape(side: .right)
-            .fill(
-              LinearGradient(
-                colors: [Color(white: 0.15), Color.black],
-                startPoint: .leading, endPoint: .trailing
-              )
-            )
+              .blendMode(.screen)
+          )
+          .overlay(
+            BowlingLaneShape()
+              .stroke(Color.black.opacity(0.5), lineWidth: 1)
+          )
 
-          // Pins in triangle formation at the back (top) of the lane.
-          pinsLayout
-            .frame(maxHeight: .infinity, alignment: .top)
-            .padding(.top, 14)
+        // Lane stripe down the middle for perspective hint.
+        BowlingLaneStripe()
+          .stroke(Color.white.opacity(0.18), lineWidth: 1)
 
-          // QubicaAMF-style pinspotter: overhead rack that descends to
-          // pick up standing pins, sweep bar that clears fallen pins.
-          BowlingPinSpotter(
-            phase: game.phase,
+        // Gutters — recessed channels.
+        BowlingGutterShape(side: .left)
+          .fill(
+            LinearGradient(
+              colors: [Color.black, Color(white: 0.15)],
+              startPoint: .leading, endPoint: .trailing
+            )
+          )
+        BowlingGutterShape(side: .right)
+          .fill(
+            LinearGradient(
+              colors: [Color(white: 0.15), Color.black],
+              startPoint: .leading, endPoint: .trailing
+            )
+          )
+
+        // Pins in triangle formation at the back (top) of the lane.
+        pinsLayout
+          .frame(maxHeight: .infinity, alignment: .top)
+          .padding(.top, 14)
+
+        // QubicaAMF-style pinspotter: overhead rack that descends to
+        // pick up standing pins, sweep bar that clears fallen pins.
+        BowlingPinSpotter(
+          phase: game.phase,
+          laneWidth: geo.size.width,
+          laneHeight: geo.size.height
+        )
+
+        // Aim guide — visible only while the player is lining up the
+        // shot (phase == .idle). A faint dotted line plus a marker
+        // shows where the ball is currently aimed.
+        if game.phase == .idle {
+          BowlingAimGuide(
+            aim: game.aimPosition,
+            tint: tint,
             laneWidth: geo.size.width,
             laneHeight: geo.size.height
           )
+        }
 
-          // Aim guide — visible only while the player is lining up the
-          // shot (phase == .idle). A faint dotted line plus a marker
-          // shows where the ball is currently aimed.
-          if game.phase == .idle {
-            BowlingAimGuide(
-              aim: game.aimPosition,
-              tint: tint,
-              laneWidth: geo.size.width,
-              laneHeight: geo.size.height
+        // Arcade 3-2-1 countdown overlay before each turn.
+        if let n = game.countdownValue {
+          BowlingCountdown(value: n, tint: tint)
+            .frame(width: geo.size.width, height: geo.size.height)
+            .allowsHitTesting(false)
+        }
+
+        // Ball — visible only while rolling/knocking, animates from
+        // bottom (player) to top (pins). On a gutter ball it curves
+        // toward the appropriate side instead of going straight.
+        if showsBall {
+          // Light trail behind the ball — tapered streak fading
+          // toward the back of the lane. Strike/spare get a hotter
+          // gradient so the celebration reads even before pins fall.
+          let trailColors =
+            game.lastOutcome == .strike
+            ? [Color.yellow, Color.orange, Color.red.opacity(0)]
+            : [tint.opacity(0.9), tint.opacity(0.5), tint.opacity(0)]
+          ballTrail(in: geo, colors: trailColors)
+
+          // Soft glow under the ball.
+          Circle()
+            .fill(tint.opacity(0.55))
+            .frame(
+              width: ballSize(progress: ballRollProgress) * 1.6,
+              height: ballSize(progress: ballRollProgress) * 1.6
             )
-          }
+            .blur(radius: 14)
+            .position(ballPosition(progress: ballRollProgress, geo: geo))
 
-          // Arcade 3-2-1 countdown overlay before each turn.
-          if let n = game.countdownValue {
-            BowlingCountdown(value: n, tint: tint)
-              .frame(width: geo.size.width, height: geo.size.height)
-              .allowsHitTesting(false)
-          }
-
-          // Ball — visible only while rolling/knocking, animates from
-          // bottom (player) to top (pins). On a gutter ball it curves
-          // toward the appropriate side instead of going straight.
-          if showsBall {
-            // Soft glow under the ball.
-            Circle()
-              .fill(tint.opacity(0.45))
-              .frame(
-                width: ballSize(progress: ballRollProgress) * 1.6,
-                height: ballSize(progress: ballRollProgress) * 1.6
-              )
-              .blur(radius: 12)
-              .position(ballPosition(progress: ballRollProgress, geo: geo))
-            BowlingBallView(size: ballSize(progress: ballRollProgress), tint: tint)
-              .position(ballPosition(progress: ballRollProgress, geo: geo))
-              .transition(.opacity)
-          }
-
-          // Strike / spare celebration: particle burst + giant pop-up text.
-          BowlingCelebration(
-            outcome: game.lastOutcome,
-            rollNumber: game.rollNumber,
-            laneWidth: geo.size.width,
-            laneHeight: geo.size.height,
-            tint: tint
-          )
-          .allowsHitTesting(false)
+          BowlingBallView(size: ballSize(progress: ballRollProgress), tint: tint)
+            // Spin around the lateral axis as it rolls forward —
+            // 720° over the full travel so finger holes whirl.
+            .rotation3DEffect(
+              .degrees(720 * (1 - ballRollProgress)),
+              axis: (1, 0, 0)
+            )
+            .position(ballPosition(progress: ballRollProgress, geo: geo))
+            .transition(.opacity)
         }
-      }
-      // Pre-rotation height is intentionally taller than the visible
-      // 240pt slot so that after the 3D tilt, the lane still fills the
-      // frame while the back end recedes convincingly.
-      .frame(height: 320)
-      // Tilt the entire lane plane backward — bottom (player end)
-      // stays in place, top (pins) recedes into the distance, like
-      // looking down a real bowling alley.
-      .rotation3DEffect(
-        .degrees(-32),
-        axis: (1, 0, 0),
-        anchor: .bottom,
-        anchorZ: 0,
-        perspective: 0.85
-      )
-      .frame(height: 260)  // visible slot after the tilt foreshortens it
-      .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.medium))
-      .offset(x: shakeOffset.width, y: shakeOffset.height)
-      .onChange(of: game.rollNumber) { _, _ in
-        // Trigger screen shake on strike. Spare gets a softer shake.
-        guard let outcome = game.lastOutcome else { return }
-        if outcome == .strike {
-          shake(intensity: 6)
-        } else if outcome == .spare {
-          shake(intensity: 3)
-        }
-      }
 
-      HStack {
-        Text("Total \(game.score)").font(.caption.bold())
-        Spacer()
-        Text(phaseHint)
-          .font(.caption2)
-          .foregroundColor(Theme.textSecondary)
+        // Strike / spare celebration: particle burst + giant pop-up text.
+        BowlingCelebration(
+          outcome: game.lastOutcome,
+          rollNumber: game.rollNumber,
+          laneWidth: geo.size.width,
+          laneHeight: geo.size.height,
+          tint: tint
+        )
+        .allowsHitTesting(false)
       }
-      .padding(.horizontal, 4)
+    }
+    // Lane fills the entire screen. Pre-rotation it sits a bit larger
+    // than the screen so once we tilt it backward there's still depth
+    // to recede into.
+    .frame(width: outerGeo.size.width, height: outerGeo.size.height * 1.35)
+    .rotation3DEffect(
+      .degrees(-38),
+      axis: (1, 0, 0),
+      anchor: .bottom,
+      anchorZ: 0,
+      perspective: 0.95
+    )
+    // Camera-follow zoom: as the ball travels, scale up slightly with
+    // the anchor at the top (pin end) so the view "drives in" toward
+    // the pins. ~1.0 → 1.18 over the roll.
+    .scaleEffect(
+      1.0 + (1.0 - ballRollProgress) * 0.18,
+      anchor: .top
+    )
+    .frame(width: outerGeo.size.width, height: outerGeo.size.height)
+    .offset(x: shakeOffset.width, y: shakeOffset.height)
+    .onChange(of: game.rollNumber) { _, _ in
+      guard let outcome = game.lastOutcome else { return }
+      if outcome == .strike {
+        shake(intensity: 8)
+      } else if outcome == .spare {
+        shake(intensity: 4)
+      }
     }
     .onChange(of: game.phase) { _, newPhase in
       switch newPhase {
@@ -668,6 +702,25 @@ private struct BowlingArt: View {
 
   private func lerp(_ a: Double, _ b: Double, _ t: Double) -> Double {
     a + (b - a) * t
+  }
+
+  /// Tapered light streak behind the rolling ball. Drawn as a thick
+  /// stroke from the player's release point to the ball's current
+  /// position so the trail naturally narrows in screen space (the
+  /// rotation3DEffect on the parent does the perspective work).
+  private func ballTrail(in geo: GeometryProxy, colors: [Color]) -> some View {
+    let p0 = ballPosition(progress: 1, geo: geo)
+    let p1 = ballPosition(progress: ballRollProgress, geo: geo)
+    return Path { path in
+      path.move(to: p0)
+      path.addLine(to: p1)
+    }
+    .stroke(
+      LinearGradient(colors: colors, startPoint: .bottom, endPoint: .top),
+      style: StrokeStyle(lineWidth: ballSize(progress: ballRollProgress) * 0.8, lineCap: .round)
+    )
+    .blur(radius: 4)
+    .opacity(0.85)
   }
 
   /// Three-stage screen shake: snap one direction, snap the other, settle.
@@ -946,37 +999,52 @@ private struct BowlingAimGuide: View {
   var body: some View {
     let centerX = laneWidth / 2
     let aimOffset = CGFloat(aim) * laneWidth * 0.42
-    let bottomX = centerX  // marker stays roughly at lane center horizontally
-    let topX = centerX + aimOffset  // line tilts toward the aim point at far end
+    let bottomX = centerX
+    let topX = centerX + aimOffset
     let bottomY = laneHeight * 0.85
     let topY = laneHeight * 0.18
 
     ZStack {
-      // Dotted projection line from the release point to the aim target.
+      // Thick red glow underlay — gives the beam a heat-trail vibe.
       Path { p in
         p.move(to: CGPoint(x: bottomX, y: bottomY))
         p.addLine(to: CGPoint(x: topX, y: topY))
       }
       .stroke(
-        tint.opacity(0.65),
-        style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: [3, 5])
+        Color.red.opacity(0.6),
+        style: StrokeStyle(lineWidth: 14, lineCap: .round)
+      )
+      .blur(radius: 6)
+
+      // Solid red beam. The rotation3DEffect on the parent lane gives
+      // it natural perspective — far end visually narrows in screen
+      // space without us having to manually taper the stroke.
+      Path { p in
+        p.move(to: CGPoint(x: bottomX, y: bottomY))
+        p.addLine(to: CGPoint(x: topX, y: topY))
+      }
+      .stroke(
+        Color.red,
+        style: StrokeStyle(lineWidth: 4, lineCap: .round)
       )
 
-      // Triangular marker at the player end, oriented up the lane.
-      Triangle()
-        .fill(tint)
-        .frame(width: 18, height: 14)
-        .overlay(Triangle().stroke(Color.black.opacity(0.6), lineWidth: 1))
-        .position(x: bottomX, y: bottomY + 4)
-
-      // Small dot at the projected target.
+      // Bright spec at the impact point so the player can see exactly
+      // where the ball is targeted.
       Circle()
-        .fill(tint.opacity(0.8))
+        .fill(Color.white)
         .frame(width: 10, height: 10)
-        .overlay(Circle().stroke(Color.black.opacity(0.5), lineWidth: 1))
+        .shadow(color: .red, radius: 6)
         .position(x: topX, y: topY)
+
+      // Subtle release-point marker so the player understands the line
+      // originates at the ball's foot.
+      Circle()
+        .fill(Color.red.opacity(0.85))
+        .frame(width: 12, height: 12)
+        .overlay(Circle().stroke(Color.white.opacity(0.8), lineWidth: 1))
+        .position(x: bottomX, y: bottomY)
     }
-    .animation(.easeOut(duration: 0.18), value: aim)
+    .animation(.easeOut(duration: 0.12), value: aim)
   }
 }
 
