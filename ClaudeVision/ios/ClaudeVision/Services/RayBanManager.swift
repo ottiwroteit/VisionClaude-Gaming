@@ -204,20 +204,14 @@ class RayBanManager: NSObject, ObservableObject, FrameSource {
       return
     }
 
-    // Step 3: Start the device session BEFORE adding capabilities.
-    do {
-      print("[RayBan] Starting device session...")
-      try deviceSession.start()
-    } catch {
-      print("[RayBan] Failed to start device session: \(error)")
-      connectionStatus = .error("Failed to start session: \(error.localizedDescription)")
-      return
-    }
-
-    // Step 4: Add the stream capability. Now safe — permission granted and
-    // device session started.
+    // Step 3: Add the stream capability while the session is still idle —
+    // capabilities are composed into the session before the lifecycle starts.
+    // (Reverses the docs example which calls start() first; in practice
+    // start() is sync but the state transition isn't, so addStream sees a
+    // not-yet-started session and silently returns nil.)
     let session: StreamSession
     do {
+      print("[RayBan] Adding stream capability...")
       guard let stream = try deviceSession.addStream(config: config) else {
         print("[RayBan] addStream returned nil — permission/state mismatch")
         connectionStatus = .error("Camera not available. Check Meta AI permission.")
@@ -228,6 +222,17 @@ class RayBanManager: NSObject, ObservableObject, FrameSource {
     } catch {
       print("[RayBan] addStream threw: \(error)")
       connectionStatus = .error("Failed to add stream: \(error.localizedDescription)")
+      return
+    }
+
+    // Step 4: Start the device session — activates the stream capability we
+    // just added.
+    do {
+      print("[RayBan] Starting device session...")
+      try deviceSession.start()
+    } catch {
+      print("[RayBan] Failed to start device session: \(error)")
+      connectionStatus = .error("Failed to start session: \(error.localizedDescription)")
       return
     }
 
