@@ -100,6 +100,34 @@ class RayBanManager: NSObject, ObservableObject, FrameSource {
     }
   }
 
+  /// Manual escape hatch when the SDK gets into a stuck-session state
+  /// that survives across process kills. Tears down registration with
+  /// Meta AI then immediately re-registers — that's the cheapest way
+  /// to clear a stranded DeviceSession without rebooting the iPhone.
+  /// The user sees Meta AI launch briefly to re-approve.
+  func forceReset() async {
+    print("[RayBan] forceReset() — unregistering then re-registering")
+    stop()  // tear down anything we hold locally first
+    isRegistered = false
+    registrationState = "unregistered"
+    connectionStatus = .connecting
+    do {
+      try await Wearables.shared.startUnregistration()
+      print("[RayBan] forceReset: unregistration complete")
+    } catch {
+      print("[RayBan] forceReset: unregistration error: \(error)")
+      // Continue anyway — re-registration may still work.
+    }
+    do {
+      try await Wearables.shared.startRegistration()
+      print("[RayBan] forceReset: re-registration complete")
+      connectionStatus = .disconnected  // ready to Start Feed again
+    } catch {
+      print("[RayBan] forceReset: re-registration error: \(error)")
+      connectionStatus = .error("Reset failed: \(error.localizedDescription)")
+    }
+  }
+
   // MARK: - FrameSource Implementation
 
   func start() throws {
@@ -193,10 +221,14 @@ class RayBanManager: NSObject, ObservableObject, FrameSource {
       deviceSession = try wearables.createSession(deviceSelector: selector)
       self.deviceSession = deviceSession
     } catch DeviceSessionError.sessionAlreadyExists {
-      print("[RayBan] Failed to create device session: sessionAlreadyExists")
-      connectionStatus = .error(
-        "A previous session is still alive. Force-quit Meta AI on your phone, then try again."
-      )
+      // Stuck cross-process session from a prior crash/kill. Auto-recover
+      // by tearing down registration and re-registering, then bail —
+      // forceReset() leaves us ready for the user to tap START FEED again.
+      print("[RayBan] sessionAlreadyExists — auto-recovering via unregister/re-register")
+      connectionStatus = .connecting
+      Task { @MainActor in
+        await self.forceReset()
+      }
       return
     } catch {
       print("[RayBan] Failed to create device session: \(error)")
