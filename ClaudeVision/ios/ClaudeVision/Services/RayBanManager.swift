@@ -204,11 +204,29 @@ class RayBanManager: NSObject, ObservableObject, FrameSource {
       return
     }
 
-    // Step 3: Add the stream capability while the session is still idle —
-    // capabilities are composed into the session before the lifecycle starts.
-    // (Reverses the docs example which calls start() first; in practice
-    // start() is sync but the state transition isn't, so addStream sees a
-    // not-yet-started session and silently returns nil.)
+    // Step 3: Start the device session and wait for it to actually reach
+    // .started before adding the stream capability. start() returns sync
+    // but the state transition is async — addStream silently nil-returns
+    // if called before the session is fully up.
+    do {
+      print("[RayBan] Starting device session...")
+      try deviceSession.start()
+    } catch {
+      print("[RayBan] Failed to start device session: \(error)")
+      connectionStatus = .error("Failed to start session: \(error.localizedDescription)")
+      return
+    }
+
+    // Step 3b: Wait for state == .started, max 5 seconds.
+    let started = await waitForDeviceSessionStarted(deviceSession, timeout: 5)
+    if !started {
+      print("[RayBan] DeviceSession never reached .started (current=\(deviceSession.state))")
+      connectionStatus = .error("Glasses didn't come online in time. Try again.")
+      return
+    }
+    print("[RayBan] DeviceSession reached .started")
+
+    // Step 4: Add the stream capability now that the session is fully up.
     let session: StreamSession
     do {
       print("[RayBan] Adding stream capability...")
@@ -222,17 +240,6 @@ class RayBanManager: NSObject, ObservableObject, FrameSource {
     } catch {
       print("[RayBan] addStream threw: \(error)")
       connectionStatus = .error("Failed to add stream: \(error.localizedDescription)")
-      return
-    }
-
-    // Step 4: Start the device session — activates the stream capability we
-    // just added.
-    do {
-      print("[RayBan] Starting device session...")
-      try deviceSession.start()
-    } catch {
-      print("[RayBan] Failed to start device session: \(error)")
-      connectionStatus = .error("Failed to start session: \(error.localizedDescription)")
       return
     }
 
@@ -293,6 +300,21 @@ class RayBanManager: NSObject, ObservableObject, FrameSource {
     print("[RayBan] Starting stream...")
     await session.start()
     print("[RayBan] Stream start() returned, state: \(session.state)")
+  }
+
+  /// Polls the device session's state until it reaches `.started` or the
+  /// deadline elapses. Returns true on success, false on timeout.
+  private func waitForDeviceSessionStarted(
+    _ session: DeviceSession,
+    timeout: TimeInterval
+  ) async -> Bool {
+    let deadline = Date().addingTimeInterval(timeout)
+    while Date() < deadline {
+      if session.state == .started { return true }
+      if session.state == .stopped || session.state == .stopping { return false }
+      try? await Task.sleep(nanoseconds: 100_000_000)  // 100ms
+    }
+    return session.state == .started
   }
 
   func stop() {
