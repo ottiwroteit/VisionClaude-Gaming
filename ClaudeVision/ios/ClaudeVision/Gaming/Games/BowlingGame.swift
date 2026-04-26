@@ -79,6 +79,39 @@ final class BowlingGame: ObservableObject, Game {
   /// when a strike or spare lands.
   enum RollOutcome: Equatable { case strike, spare, open, gutter }
   @Published private(set) var lastOutcome: RollOutcome? = nil
+
+  /// Themed ball skins the player can pick before rolling.
+  enum BallSkin: String, CaseIterable, Identifiable {
+    case classic
+    case skull
+    case superhero
+    case eightBall
+    case basketball
+    case soccer
+    case fire  // unlocked automatically during a turkey streak
+
+    var id: String { rawValue }
+    var displayName: String {
+      switch self {
+      case .classic: return "Classic"
+      case .skull: return "Sugar Skull"
+      case .superhero: return "Caped"
+      case .eightBall: return "8-Ball"
+      case .basketball: return "Hoops"
+      case .soccer: return "Football"
+      case .fire: return "On Fire"
+      }
+    }
+  }
+  @Published var selectedSkin: BallSkin = .classic
+  /// The skin actually used for rendering — `.fire` overrides the
+  /// player's pick when a turkey (3+ consecutive strikes) is active.
+  var activeSkin: BallSkin { isOnFire ? .fire : selectedSkin }
+
+  /// How many strikes in a row the player has thrown. Bonus points kick
+  /// in once the streak reaches 3 (a "turkey"); the ball goes on fire.
+  @Published private(set) var consecutiveStrikes: Int = 0
+  var isOnFire: Bool { consecutiveStrikes >= 3 }
   @Published private(set) var statusLine: String = "Frame 1 · Ready to bowl"
   @Published private(set) var isFinished: Bool = false
   var activeModifier: VenueModifier = .default
@@ -215,6 +248,8 @@ final class BowlingGame: ObservableObject, Game {
     rollNumber = 0
     gutter = nil
     aimPosition = 0
+    consecutiveStrikes = 0
+    lastOutcome = nil
     rollHistory.removeAll()
     isFinished = false
     statusLine = "Frame 1 · get ready…"
@@ -302,6 +337,13 @@ final class BowlingGame: ObservableObject, Game {
     rollHistory.append(knocked)
     lastRoll = knocked
     score = computeScore()
+    // Turkey bonus: once the player is on a 3+ strike streak, every
+    // pin knocked is worth +5 extra. Surfaces in the displayed total
+    // (added on top of the canonical bowling score so the scoreboard
+    // running totals still make sense).
+    if isOnFire {
+      score += knocked * 5
+    }
     phase = .knocking
 
     // A strike means knocking all 10 pins on a fresh rack — true on
@@ -310,14 +352,35 @@ final class BowlingGame: ObservableObject, Game {
     let isStrike = knocked == 10 && pinsBeforeWasFull()
     let isSpare = !isStrike && pinsRemaining == 0
 
+    // Update the consecutive-strike counter BEFORE building the callout
+    // so the callout can announce a turkey or fire-mode message.
+    if isStrike {
+      consecutiveStrikes += 1
+    } else {
+      consecutiveStrikes = 0
+    }
+
     let baseCallout: String
     if gutter != nil {
       statusLine = "Gutter ball! 0 pins · total \(score)"
       baseCallout = "Gutter ball. Total \(score)."
       lastOutcome = .gutter
     } else if isStrike {
-      statusLine = "STRIKE! · total \(score)"
-      baseCallout = "Strike! Total \(score)."
+      switch consecutiveStrikes {
+      case 1:
+        statusLine = "STRIKE! · total \(score)"
+        baseCallout = "Strike! Total \(score)."
+      case 2:
+        statusLine = "DOUBLE! 2 in a row · total \(score)"
+        baseCallout = "Double! Two in a row. Total \(score)."
+      case 3:
+        statusLine = "TURKEY! Ball on fire · total \(score)"
+        baseCallout = "Turkey! Ball on fire. Total \(score)."
+      default:
+        statusLine = "FIRE STRIKE \(consecutiveStrikes)! · total \(score)"
+        baseCallout =
+          "Fire strike! \(consecutiveStrikes) in a row. Total \(score)."
+      }
       lastOutcome = .strike
     } else if isSpare {
       statusLine = "Spare! \(knocked) pins · total \(score)"

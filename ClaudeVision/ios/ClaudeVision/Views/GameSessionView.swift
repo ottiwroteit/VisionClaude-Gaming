@@ -54,11 +54,15 @@ struct GameSessionView: View {
               .frame(maxWidth: .infinity, maxHeight: .infinity)
           } else {
             // Compact bowling chrome over the lane: scoreboard up top,
-            // everything else flexed to the bottom.
+            // ball picker just below, everything else flexed down.
             BowlingScoreboard(frames: bowlingFrames(game), total: game.score)
               .fixedSize(horizontal: false, vertical: true)
               .background(.ultraThinMaterial)
               .clipShape(RoundedRectangle(cornerRadius: 6))
+            if let bowlingGame = game as? BowlingGame, bowlingGame.phase == .idle {
+              BowlingBallPicker(game: bowlingGame, tint: tint(for: game))
+                .transition(.opacity)
+            }
             Spacer(minLength: 0)
           }
           if !dismissedCoaching.contains(game.id) {
@@ -498,8 +502,8 @@ private struct BowlingArt: View {
           // Light trail behind the ball — tapered streak fading
           // toward the back of the lane. Strike/spare get a hotter
           // gradient so the celebration reads even before pins fall.
-          let trailColors =
-            game.lastOutcome == .strike
+          let trailColors: [Color] =
+            (game.isOnFire || game.lastOutcome == .strike)
             ? [Color.yellow, Color.orange, Color.red.opacity(0)]
             : [tint.opacity(0.9), tint.opacity(0.5), tint.opacity(0)]
           ballTrail(in: geo, colors: trailColors)
@@ -514,15 +518,17 @@ private struct BowlingArt: View {
             .blur(radius: 14)
             .position(ballPosition(progress: ballRollProgress, geo: geo))
 
-          BowlingBallView(size: ballSize(progress: ballRollProgress), tint: tint)
-            // Spin around the lateral axis as it rolls forward —
-            // 720° over the full travel so finger holes whirl.
-            .rotation3DEffect(
-              .degrees(720 * (1 - ballRollProgress)),
-              axis: (1, 0, 0)
-            )
-            .position(ballPosition(progress: ballRollProgress, geo: geo))
-            .transition(.opacity)
+          BowlingBallView(
+            size: ballSize(progress: ballRollProgress),
+            tint: tint,
+            skin: game.activeSkin
+          )
+          .rotation3DEffect(
+            .degrees(720 * (1 - ballRollProgress)),
+            axis: (1, 0, 0)
+          )
+          .position(ballPosition(progress: ballRollProgress, geo: geo))
+          .transition(.opacity)
         }
 
         // Strike / spare celebration: particle burst + giant pop-up text.
@@ -810,36 +816,224 @@ private struct BowlingGutterShape: Shape {
 private struct BowlingBallView: View {
   let size: CGFloat
   let tint: Color
+  var skin: BowlingGame.BallSkin = .classic
+
   var body: some View {
     ZStack {
-      Circle()
-        .fill(
-          RadialGradient(
-            colors: [tint.opacity(0.95), tint.opacity(0.55)],
-            center: UnitPoint(x: 0.32, y: 0.32),
-            startRadius: max(2, size * 0.05),
-            endRadius: size * 0.7
-          )
-        )
-      // Three finger holes arranged in a small triangle, sized as a
-      // fraction of the ball so they shrink with perspective.
-      Group {
-        Circle()
-          .fill(Color.black.opacity(0.7))
-          .frame(width: size * 0.13, height: size * 0.13)
-          .offset(x: -size * 0.18, y: -size * 0.10)
-        Circle()
-          .fill(Color.black.opacity(0.7))
-          .frame(width: size * 0.10, height: size * 0.10)
-          .offset(x: size * 0.18, y: -size * 0.06)
-        Circle()
-          .fill(Color.black.opacity(0.7))
-          .frame(width: size * 0.10, height: size * 0.10)
-          .offset(x: 0, y: size * 0.12)
+      // Base sphere with the skin's tint/pattern.
+      base
+      // Finger holes — drawn AFTER the skin so even patterned balls
+      // still read as bowling balls.
+      fingerHoles
+      // Fire skin gets an additional flame halo around the ball.
+      if skin == .fire {
+        fireHalo
       }
     }
     .frame(width: size, height: size)
     .overlay(Circle().stroke(Color.black.opacity(0.45), lineWidth: 1))
+  }
+
+  @ViewBuilder
+  private var base: some View {
+    switch skin {
+    case .classic:
+      Circle().fill(
+        RadialGradient(
+          colors: [tint.opacity(0.95), tint.opacity(0.55)],
+          center: UnitPoint(x: 0.32, y: 0.32),
+          startRadius: max(2, size * 0.05),
+          endRadius: size * 0.7
+        ))
+    case .skull:
+      // Sugar-skull style: white base with red/black face glyphs.
+      Circle().fill(
+        RadialGradient(
+          colors: [Color.white, Color(white: 0.85)],
+          center: UnitPoint(x: 0.3, y: 0.3),
+          startRadius: 2, endRadius: size * 0.7
+        ))
+      // Eye sockets.
+      Group {
+        Circle().fill(Color.red.opacity(0.85))
+          .frame(width: size * 0.18, height: size * 0.18)
+          .offset(x: -size * 0.16, y: -size * 0.08)
+        Circle().fill(Color.red.opacity(0.85))
+          .frame(width: size * 0.18, height: size * 0.18)
+          .offset(x: size * 0.16, y: -size * 0.08)
+      }
+    case .superhero:
+      Circle().fill(
+        RadialGradient(
+          colors: [
+            Color(red: 0.10, green: 0.18, blue: 0.55), Color(red: 0.05, green: 0.10, blue: 0.30),
+          ],
+          center: UnitPoint(x: 0.3, y: 0.3),
+          startRadius: 2, endRadius: size * 0.7
+        ))
+      // Lightning-bolt glyph.
+      Image(systemName: "bolt.fill")
+        .font(.system(size: size * 0.5, weight: .black))
+        .foregroundColor(.yellow)
+        .shadow(color: .yellow.opacity(0.6), radius: 3)
+    case .eightBall:
+      Circle().fill(
+        RadialGradient(
+          colors: [Color(white: 0.18), Color.black],
+          center: UnitPoint(x: 0.3, y: 0.3),
+          startRadius: 2, endRadius: size * 0.7
+        ))
+      // White roundel with "8".
+      Circle().fill(Color.white).frame(width: size * 0.45, height: size * 0.45)
+      Text("8")
+        .font(.system(size: size * 0.32, weight: .black))
+        .foregroundColor(.black)
+    case .basketball:
+      Circle().fill(
+        RadialGradient(
+          colors: [
+            Color(red: 0.85, green: 0.42, blue: 0.18), Color(red: 0.55, green: 0.25, blue: 0.10),
+          ],
+          center: UnitPoint(x: 0.3, y: 0.3),
+          startRadius: 2, endRadius: size * 0.7
+        ))
+      // Seam lines.
+      Path { p in
+        p.move(to: CGPoint(x: 0, y: size * 0.5))
+        p.addLine(to: CGPoint(x: size, y: size * 0.5))
+        p.move(to: CGPoint(x: size * 0.5, y: 0))
+        p.addLine(to: CGPoint(x: size * 0.5, y: size))
+        p.move(to: CGPoint(x: size * 0.15, y: size * 0.15))
+        p.addQuadCurve(
+          to: CGPoint(x: size * 0.85, y: size * 0.15),
+          control: CGPoint(x: size * 0.5, y: size * 0.45)
+        )
+        p.move(to: CGPoint(x: size * 0.15, y: size * 0.85))
+        p.addQuadCurve(
+          to: CGPoint(x: size * 0.85, y: size * 0.85),
+          control: CGPoint(x: size * 0.5, y: size * 0.55)
+        )
+      }
+      .stroke(Color.black.opacity(0.7), lineWidth: 1.5)
+      .clipShape(Circle())
+    case .soccer:
+      Circle().fill(Color.white)
+      // Black pentagon center.
+      Pentagon()
+        .fill(Color.black)
+        .frame(width: size * 0.32, height: size * 0.32)
+      // Surrounding pentagon hints.
+      ForEach(0..<5, id: \.self) { i in
+        Pentagon()
+          .fill(Color.black.opacity(0.85))
+          .frame(width: size * 0.14, height: size * 0.14)
+          .offset(
+            x: cos(Double(i) * .pi * 2 / 5 - .pi / 2) * Double(size) * 0.3,
+            y: sin(Double(i) * .pi * 2 / 5 - .pi / 2) * Double(size) * 0.3
+          )
+      }
+      .clipShape(Circle())
+    case .fire:
+      Circle().fill(
+        RadialGradient(
+          colors: [
+            Color.yellow,
+            Color.orange,
+            Color.red,
+          ],
+          center: UnitPoint(x: 0.3, y: 0.3),
+          startRadius: 2, endRadius: size * 0.7
+        ))
+    }
+  }
+
+  private var fingerHoles: some View {
+    Group {
+      Circle()
+        .fill(Color.black.opacity(0.7))
+        .frame(width: size * 0.13, height: size * 0.13)
+        .offset(x: -size * 0.18, y: -size * 0.10)
+      Circle()
+        .fill(Color.black.opacity(0.7))
+        .frame(width: size * 0.10, height: size * 0.10)
+        .offset(x: size * 0.18, y: -size * 0.06)
+      Circle()
+        .fill(Color.black.opacity(0.7))
+        .frame(width: size * 0.10, height: size * 0.10)
+        .offset(x: 0, y: size * 0.12)
+    }
+  }
+
+  private var fireHalo: some View {
+    ZStack {
+      Circle()
+        .fill(Color.orange.opacity(0.55))
+        .frame(width: size * 1.6, height: size * 1.6)
+        .blur(radius: 16)
+      Circle()
+        .fill(Color.yellow.opacity(0.4))
+        .frame(width: size * 1.2, height: size * 1.2)
+        .blur(radius: 10)
+    }
+  }
+}
+
+// MARK: - Bowling ball picker
+// Horizontal row of thumbnails — tap to set the player's preferred
+// ball skin. Lives in the chrome overlay so the player can change
+// between rolls. The "fire" skin is excluded; it's auto-applied
+// during a 3+ strike streak and not user-pickable.
+
+struct BowlingBallPicker: View {
+  @ObservedObject var game: BowlingGame
+  let tint: Color
+
+  var body: some View {
+    ScrollView(.horizontal, showsIndicators: false) {
+      HStack(spacing: 10) {
+        ForEach(BowlingGame.BallSkin.allCases.filter { $0 != .fire }) { skin in
+          Button {
+            game.selectedSkin = skin
+          } label: {
+            VStack(spacing: 3) {
+              ZStack {
+                if skin == game.selectedSkin {
+                  Circle()
+                    .stroke(tint, lineWidth: 3)
+                    .frame(width: 44, height: 44)
+                }
+                BowlingBallView(size: 36, tint: tint, skin: skin)
+              }
+              Text(skin.displayName)
+                .font(.system(size: 9, weight: .semibold, design: .rounded))
+                .foregroundColor(.white)
+            }
+          }
+          .buttonStyle(.plain)
+        }
+      }
+      .padding(.horizontal, 10)
+      .padding(.vertical, 6)
+    }
+    .background(.ultraThinMaterial.opacity(0.85))
+    .clipShape(RoundedRectangle(cornerRadius: 10))
+  }
+}
+
+private struct Pentagon: Shape {
+  func path(in rect: CGRect) -> Path {
+    var p = Path()
+    let r = min(rect.width, rect.height) / 2
+    let cx = rect.midX
+    let cy = rect.midY
+    for i in 0..<5 {
+      let angle = Double(i) * .pi * 2 / 5 - .pi / 2
+      let x = cx + CGFloat(cos(angle)) * r
+      let y = cy + CGFloat(sin(angle)) * r
+      if i == 0 { p.move(to: CGPoint(x: x, y: y)) } else { p.addLine(to: CGPoint(x: x, y: y)) }
+    }
+    p.closeSubpath()
+    return p
   }
 }
 
