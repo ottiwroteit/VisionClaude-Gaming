@@ -13,9 +13,15 @@ final class BowlingGame: ObservableObject, Game {
     case finalScoring  // game over
   }
 
+  /// Which gutter, if any, the current roll is heading into. nil means
+  /// straight down the middle. The view reads this during `.rolling` to
+  /// curve the ball animation toward the appropriate side.
+  enum GutterSide: Equatable { case left, right }
+
   let id = "bowling"
   let title = "Meta Bowling"
-  let howToPlay = "Flick your chin up to roll. Wait for the pins to settle before your next throw."
+  let howToPlay =
+    "Chin UP for a straight roll. Tilt LEFT or RIGHT and your ball goes in the gutter."
   let tint: GameTint = .accent
 
   /// Bowling should feel gentle on the neck — drop the activeThreshold
@@ -39,14 +45,128 @@ final class BowlingGame: ObservableObject, Game {
   /// a "fired this many times" counter.
   @Published private(set) var rollNumber: Int = 0
   @Published private(set) var phase: RollPhase = .idle
+  /// Set when the player tilted their head left or right on the flick.
+  /// Drives the ball-curve animation; cleared when phase returns to idle.
+  @Published private(set) var gutter: GutterSide? = nil
   @Published private(set) var statusLine: String = "Frame 1 · Ready to bowl"
   @Published private(set) var isFinished: Bool = false
   var activeModifier: VenueModifier = .default
 
   private let totalFrames = 10
   /// Flat history of every ball's pin count, in roll order. Real bowling
-  /// scoring uses this for strike/spare bonus lookahead.
-  private var rollHistory: [Int] = []
+  /// scoring uses this for strike/spare bonus lookahead. Published so the
+  /// scoreboard view can render frame-by-frame breakdowns.
+  @Published private(set) var rollHistory: [Int] = []
+
+  /// One per frame, computed from rollHistory. Drives the scoreboard.
+  struct FrameDisplay: Equatable {
+    let number: Int  // 1...10
+    let rolls: [String]  // "X" / "/" / "-" / "0".."9"
+    let cumulative: Int?  // nil if not finalized yet (waiting on bonus)
+    let isCurrent: Bool
+  }
+
+  var frameDisplays: [FrameDisplay] {
+    var displays: [FrameDisplay] = []
+    var idx = 0
+    var running = 0
+
+    for f in 0..<totalFrames {
+      let isCurrent = (frame - 1) == f && !isFinished
+      guard idx < rollHistory.count else {
+        displays.append(
+          FrameDisplay(number: f + 1, rolls: [], cumulative: nil, isCurrent: isCurrent))
+        continue
+      }
+
+      if f == totalFrames - 1 {
+        // 10th frame: up to 3 balls, no bonus lookahead.
+        let rolls = Array(rollHistory.suffix(rollHistory.count - idx))
+        running += rolls.reduce(0, +)
+        let labels = renderTenthFrameLabels(rolls)
+        let total: Int? = isFrame10Complete(rolls) ? running : nil
+        displays.append(
+          FrameDisplay(number: 10, rolls: labels, cumulative: total, isCurrent: isCurrent))
+        break
+      }
+
+      let r1 = rollHistory[idx]
+      if r1 == 10 {
+        // Strike — pending bonus from next 2 rolls.
+        let bonus1: Int? = idx + 1 < rollHistory.count ? rollHistory[idx + 1] : nil
+        let bonus2: Int? = idx + 2 < rollHistory.count ? rollHistory[idx + 2] : nil
+        let total: Int? = (bonus1 != nil && bonus2 != nil) ? running + 10 + bonus1! + bonus2! : nil
+        if total != nil { running = total! }
+        displays.append(
+          FrameDisplay(
+            number: f + 1, rolls: ["", "X"], cumulative: total, isCurrent: isCurrent))
+        idx += 1
+      } else if idx + 1 < rollHistory.count {
+        let r2 = rollHistory[idx + 1]
+        let isSpare = r1 + r2 == 10
+        let r1Label = r1 == 0 ? "-" : "\(r1)"
+        let r2Label = isSpare ? "/" : (r2 == 0 ? "-" : "\(r2)")
+        if isSpare {
+          let bonus: Int? = idx + 2 < rollHistory.count ? rollHistory[idx + 2] : nil
+          let total: Int? = bonus != nil ? running + 10 + bonus! : nil
+          if total != nil { running = total! }
+          displays.append(
+            FrameDisplay(
+              number: f + 1, rolls: [r1Label, r2Label], cumulative: total, isCurrent: isCurrent))
+        } else {
+          running += r1 + r2
+          displays.append(
+            FrameDisplay(
+              number: f + 1, rolls: [r1Label, r2Label], cumulative: running, isCurrent: isCurrent))
+        }
+        idx += 2
+      } else {
+        // Just ball 1 of an open frame so far — partial display, no total.
+        let r1Label = r1 == 0 ? "-" : "\(r1)"
+        displays.append(
+          FrameDisplay(
+            number: f + 1, rolls: [r1Label], cumulative: nil, isCurrent: isCurrent))
+        break
+      }
+    }
+
+    // Pad empty frames so the scoreboard always has 10 cells.
+    while displays.count < totalFrames {
+      let n = displays.count + 1
+      displays.append(
+        FrameDisplay(
+          number: n, rolls: [], cumulative: nil, isCurrent: (frame == n) && !isFinished))
+    }
+    return displays
+  }
+
+  private func renderTenthFrameLabels(_ rolls: [Int]) -> [String] {
+    var out: [String] = []
+    for (i, r) in rolls.enumerated() {
+      if r == 10 {
+        out.append("X")
+      } else if i == 1 && (rolls[0] != 10) && rolls[0] + r == 10 {
+        out.append("/")
+      } else if i == 2 && rolls[1] != 10 && rolls[0] != 10 && rolls[1] + r == 10 {
+        // Spare on balls 2+3 of 10th (won't happen with current logic but
+        // handle it for safety).
+        out.append("/")
+      } else if r == 0 {
+        out.append("-")
+      } else {
+        out.append("\(r)")
+      }
+    }
+    return out
+  }
+
+  private func isFrame10Complete(_ rolls: [Int]) -> Bool {
+    if rolls.count >= 3 { return true }
+    if rolls.count == 2 {
+      return rolls[0] != 10 && rolls[0] + rolls[1] != 10
+    }
+    return false
+  }
 
   // Phase timing — kept here so the view can stay in sync.
   private let rollDuration: TimeInterval = 1.5
@@ -63,6 +183,7 @@ final class BowlingGame: ObservableObject, Game {
     lastRoll = 0
     rollNumber = 0
     phase = .idle
+    gutter = nil
     rollHistory.removeAll()
     isFinished = false
     statusLine = "Frame 1 · Flick chin up to bowl"
@@ -74,12 +195,30 @@ final class BowlingGame: ObservableObject, Game {
     // .idle after the ball animates, pins fall, and (between frames)
     // the rack resets.
     guard phase == .idle else { return }
-    guard event.kind == .flick, event.direction == .up else { return }
+    guard event.kind == .flick else { return }
 
-    let pendingKnock = pinsKnocked(power: event.magnitude, remaining: pinsRemaining)
+    // Direction encodes intent: chin UP rolls straight, head tilt LEFT
+    // or RIGHT puts the ball in the corresponding gutter (zero pins).
+    let pendingKnock: Int
+    let gutterSide: GutterSide?
+    switch event.direction {
+    case .up:
+      pendingKnock = pinsKnocked(power: event.magnitude, remaining: pinsRemaining)
+      gutterSide = nil
+    case .left:
+      pendingKnock = 0
+      gutterSide = .left
+    case .right:
+      pendingKnock = 0
+      gutterSide = .right
+    default:
+      return  // ignore .down and any other direction
+    }
+
+    gutter = gutterSide
     rollNumber += 1
     phase = .rolling
-    statusLine = "Rolling…"
+    statusLine = gutterSide == nil ? "Rolling…" : "Gutter ball!"
 
     // Pins drop AFTER the ball arrives.
     Task { @MainActor in
@@ -106,7 +245,10 @@ final class BowlingGame: ObservableObject, Game {
     let isSpare = !isStrike && pinsRemaining == 0
 
     let baseCallout: String
-    if isStrike {
+    if gutter != nil {
+      statusLine = "Gutter ball! 0 pins · total \(score)"
+      baseCallout = "Gutter ball. Total \(score)."
+    } else if isStrike {
       statusLine = "STRIKE! · total \(score)"
       baseCallout = "Strike! Total \(score)."
     } else if isSpare {
@@ -156,6 +298,7 @@ final class BowlingGame: ObservableObject, Game {
     } else {
       ballInFrame = 2
       statusLine = "\(pinsRemaining) left · flick for ball 2"
+      gutter = nil
       phase = .idle
     }
   }
@@ -170,6 +313,7 @@ final class BowlingGame: ObservableObject, Game {
       } else {
         ballInFrame = 2
         statusLine = "\(pinsRemaining) left · flick for ball 2"
+        gutter = nil
         phase = .idle
       }
     case 2:
@@ -184,6 +328,7 @@ final class BowlingGame: ObservableObject, Game {
           // Continue with whatever's standing.
           ballInFrame = 3
           statusLine = "\(pinsRemaining) left · flick for fill ball"
+          gutter = nil
           phase = .idle
         }
       } else if r1 + r2 == 10 {
@@ -211,6 +356,7 @@ final class BowlingGame: ObservableObject, Game {
       self.ballInFrame = 1
       self.pinsRemaining = 10
       self.statusLine = "Frame \(self.frame) · flick chin up to bowl"
+      self.gutter = nil
       self.phase = .idle
     }
   }
@@ -222,6 +368,7 @@ final class BowlingGame: ObservableObject, Game {
       self.pinsRemaining = 10
       self.ballInFrame = ball
       self.statusLine = "\(label)"
+      self.gutter = nil
       self.phase = .idle
     }
   }

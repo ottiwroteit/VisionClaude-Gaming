@@ -18,6 +18,10 @@ struct GameSessionView: View {
 
   @State private var shareImage: UIImage?
   @State private var showShareSheet = false
+  /// Coaching panels the player has explicitly dismissed (per game id).
+  /// Once you tap the X you don't see the how-to-play hint again this
+  /// session.
+  @State private var dismissedCoaching: Set<String> = []
 
   var body: some View {
     guard let game = activeGame else {
@@ -37,7 +41,9 @@ struct GameSessionView: View {
           scoreRow(for: game)
           heroContainer(for: game)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-          coachingPanel(for: game)
+          if !dismissedCoaching.contains(game.id) {
+            coachingPanel(for: game)
+          }
           liveMotionBar(for: game)
         }
         .padding(20)
@@ -185,6 +191,19 @@ struct GameSessionView: View {
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
+      Button {
+        withAnimation(.easeOut(duration: 0.18)) {
+          _ = dismissedCoaching.insert(game.id)
+        }
+      } label: {
+        Image(systemName: "xmark")
+          .font(.system(size: 11, weight: .bold))
+          .foregroundColor(Theme.textSecondary)
+          .padding(6)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel("Dismiss instructions")
     }
     .padding(12)
     .celBorder(tint: tint(for: game), strokeWidth: 2)
@@ -336,6 +355,8 @@ private struct BowlingArt: View {
 
   var body: some View {
     VStack(spacing: 8) {
+      BowlingScoreboard(frames: game.frameDisplays, total: game.score)
+
       HStack {
         Text("Frame \(game.frame)").font(.caption.bold())
         Text("·").foregroundColor(Theme.textSecondary)
@@ -383,22 +404,10 @@ private struct BowlingArt: View {
             .padding(.top, 14)
 
           // Ball — visible only while rolling/knocking, animates from
-          // bottom (player) to top (pins) over the rolling phase.
+          // bottom (player) to top (pins). On a gutter ball it curves
+          // toward the appropriate side instead of going straight.
           if showsBall {
-            Circle()
-              .fill(
-                RadialGradient(
-                  colors: [tint.opacity(0.95), tint.opacity(0.6)],
-                  center: UnitPoint(x: 0.35, y: 0.35),
-                  startRadius: 2,
-                  endRadius: 25
-                )
-              )
-              .overlay(Circle().stroke(Color.black.opacity(0.4), lineWidth: 1))
-              .frame(
-                width: ballSize(progress: ballRollProgress),
-                height: ballSize(progress: ballRollProgress)
-              )
+            BowlingBallView(size: ballSize(progress: ballRollProgress), tint: tint)
               .position(ballPosition(progress: ballRollProgress, geo: geo))
               .transition(.opacity)
           }
@@ -510,7 +519,20 @@ private struct BowlingArt: View {
   private func ballPosition(progress: Double, geo: GeometryProxy) -> CGPoint {
     let w = geo.size.width
     let h = geo.size.height
-    let x = w / 2
+    let centerX = w / 2
+
+    // X drifts toward the gutter on a tilted flick. Quadratic in `t` so
+    // the ball starts straight and increasingly veers as it travels.
+    var x = centerX
+    if let gutter = game.gutter {
+      // 1 = at player end, 0 = at pins. We want straight at start, max
+      // drift at end.
+      let t = 1 - progress
+      let curve = t * t
+      let gutterX: CGFloat = (gutter == .left) ? w * 0.08 : w * 0.92
+      x = CGFloat(lerp(Double(centerX), Double(gutterX), Double(curve)))
+    }
+
     // 1 → near (bottom 88%), 0 → far (top 22%).
     let y = lerp(h * 0.88, h * 0.22, 1 - progress)
     return CGPoint(x: x, y: y)
@@ -530,14 +552,25 @@ private struct BowlingArt: View {
 
 // MARK: - Bowling shapes
 
+// Lane geometry — kept consistent across lane / gutter shapes so the
+// gutters sit flush alongside the lane in correct forced perspective.
+private enum LaneGeo {
+  static let topLaneInset: CGFloat = 0.32  // lane edge at far end
+  static let bottomLaneInset: CGFloat = 0.13  // lane edge at near end
+  static let topGutterOuter: CGFloat = 0.18  // gutter outer edge at far end
+}
+
 private struct BowlingLaneShape: Shape {
   func path(in rect: CGRect) -> Path {
     var p = Path()
-    let topInset = rect.width * 0.22
+    let w = rect.width
+    let h = rect.height
+    let topInset = w * LaneGeo.topLaneInset
+    let bottomInset = w * LaneGeo.bottomLaneInset
     p.move(to: CGPoint(x: topInset, y: 0))
-    p.addLine(to: CGPoint(x: rect.width - topInset, y: 0))
-    p.addLine(to: CGPoint(x: rect.width, y: rect.height))
-    p.addLine(to: CGPoint(x: 0, y: rect.height))
+    p.addLine(to: CGPoint(x: w - topInset, y: 0))
+    p.addLine(to: CGPoint(x: w - bottomInset, y: h))
+    p.addLine(to: CGPoint(x: bottomInset, y: h))
     p.closeSubpath()
     return p
   }
@@ -557,20 +590,159 @@ private struct BowlingGutterShape: Shape {
   let side: Side
   func path(in rect: CGRect) -> Path {
     var p = Path()
-    let topInset = rect.width * 0.22
+    let w = rect.width
+    let h = rect.height
+    let laneTop = w * LaneGeo.topLaneInset
+    let laneBottom = w * LaneGeo.bottomLaneInset
+    let outerTop = w * LaneGeo.topGutterOuter
     switch side {
     case .left:
-      p.move(to: CGPoint(x: 0, y: 0))
-      p.addLine(to: CGPoint(x: topInset, y: 0))
-      p.addLine(to: CGPoint(x: 0, y: rect.height))
+      // Gutter is the strip between the rect's left edge and the lane.
+      p.move(to: CGPoint(x: outerTop, y: 0))
+      p.addLine(to: CGPoint(x: laneTop, y: 0))
+      p.addLine(to: CGPoint(x: laneBottom, y: h))
+      p.addLine(to: CGPoint(x: 0, y: h))
       p.closeSubpath()
     case .right:
-      p.move(to: CGPoint(x: rect.width - topInset, y: 0))
-      p.addLine(to: CGPoint(x: rect.width, y: 0))
-      p.addLine(to: CGPoint(x: rect.width, y: rect.height))
+      p.move(to: CGPoint(x: w - laneTop, y: 0))
+      p.addLine(to: CGPoint(x: w - outerTop, y: 0))
+      p.addLine(to: CGPoint(x: w, y: h))
+      p.addLine(to: CGPoint(x: w - laneBottom, y: h))
       p.closeSubpath()
     }
     return p
+  }
+}
+
+// MARK: - Bowling ball with finger holes
+
+private struct BowlingBallView: View {
+  let size: CGFloat
+  let tint: Color
+  var body: some View {
+    ZStack {
+      Circle()
+        .fill(
+          RadialGradient(
+            colors: [tint.opacity(0.95), tint.opacity(0.55)],
+            center: UnitPoint(x: 0.32, y: 0.32),
+            startRadius: max(2, size * 0.05),
+            endRadius: size * 0.7
+          )
+        )
+      // Three finger holes arranged in a small triangle, sized as a
+      // fraction of the ball so they shrink with perspective.
+      Group {
+        Circle()
+          .fill(Color.black.opacity(0.7))
+          .frame(width: size * 0.13, height: size * 0.13)
+          .offset(x: -size * 0.18, y: -size * 0.10)
+        Circle()
+          .fill(Color.black.opacity(0.7))
+          .frame(width: size * 0.10, height: size * 0.10)
+          .offset(x: size * 0.18, y: -size * 0.06)
+        Circle()
+          .fill(Color.black.opacity(0.7))
+          .frame(width: size * 0.10, height: size * 0.10)
+          .offset(x: 0, y: size * 0.12)
+      }
+    }
+    .frame(width: size, height: size)
+    .overlay(Circle().stroke(Color.black.opacity(0.45), lineWidth: 1))
+  }
+}
+
+// MARK: - Bowling scoreboard
+// Mimics the QubicaAMF-style overhead apparatus: frame numbers on top,
+// per-ball cells with strike/spare marks, cumulative running totals
+// underneath, and a wider TOTAL column on the right.
+
+private struct BowlingScoreboard: View {
+  let frames: [BowlingGame.FrameDisplay]
+  let total: Int
+
+  private let frameNumberHeight: CGFloat = 14
+  private let cellHeight: CGFloat = 36
+
+  var body: some View {
+    VStack(spacing: 0) {
+      headerRow
+      Rectangle().fill(Color.orange).frame(height: 1)
+      bodyRow
+    }
+    .clipShape(RoundedRectangle(cornerRadius: 6))
+    .overlay(
+      RoundedRectangle(cornerRadius: 6)
+        .stroke(Color.orange, lineWidth: 1.5)
+    )
+  }
+
+  private var headerRow: some View {
+    HStack(spacing: 0) {
+      ForEach(1...10, id: \.self) { n in
+        Text("\(n)")
+          .font(.system(size: 10, weight: .heavy, design: .rounded))
+          .foregroundColor(n == 10 ? .red : Color(white: 0.15))
+          .frame(maxWidth: .infinity)
+          .frame(height: frameNumberHeight)
+        if n < 10 {
+          Rectangle().fill(Color.orange.opacity(0.7)).frame(width: 1)
+        }
+      }
+      Rectangle().fill(Color.orange.opacity(0.7)).frame(width: 1)
+      Text("TOT")
+        .font(.system(size: 10, weight: .heavy, design: .rounded))
+        .foregroundColor(Color(white: 0.15))
+        .frame(width: 38, height: frameNumberHeight)
+    }
+    .background(Color.orange)
+  }
+
+  private var bodyRow: some View {
+    HStack(spacing: 0) {
+      ForEach(frames, id: \.number) { frame in
+        frameCell(frame)
+        if frame.number < 10 {
+          Rectangle().fill(Color.white.opacity(0.4)).frame(width: 1)
+        }
+      }
+      Rectangle().fill(Color.white.opacity(0.4)).frame(width: 1)
+      // Total column.
+      Text("\(total)")
+        .font(.system(size: 16, weight: .heavy, design: .rounded))
+        .foregroundColor(.white)
+        .frame(width: 38, height: cellHeight)
+        .background(Color.purple.opacity(0.85))
+    }
+    .frame(height: cellHeight)
+    .background(Color.purple.opacity(0.6))
+  }
+
+  @ViewBuilder
+  private func frameCell(_ frame: BowlingGame.FrameDisplay) -> some View {
+    let bg = frame.isCurrent ? Color.purple : Color.purple.opacity(0.7)
+    VStack(spacing: 0) {
+      // Top: per-ball labels. 10th frame has 3 boxes, others have 2.
+      HStack(spacing: 0) {
+        let slots = frame.number == 10 ? 3 : 2
+        ForEach(0..<slots, id: \.self) { idx in
+          Text(idx < frame.rolls.count ? frame.rolls[idx] : "")
+            .font(.system(size: 11, weight: .bold, design: .rounded))
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 16)
+            .border(Color.white.opacity(0.25), width: 0.5)
+        }
+      }
+      // Bottom: cumulative score (shown only when finalized).
+      Text(frame.cumulative.map { "\($0)" } ?? "")
+        .font(.system(size: 12, weight: .heavy, design: .rounded))
+        .foregroundColor(.white)
+        .frame(maxWidth: .infinity)
+        .frame(height: cellHeight - 16)
+    }
+    .frame(maxWidth: .infinity)
+    .background(bg)
   }
 }
 
