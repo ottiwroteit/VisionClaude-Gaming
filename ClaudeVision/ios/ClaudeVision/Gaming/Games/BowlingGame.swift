@@ -55,20 +55,31 @@ final class BowlingGame: ObservableObject, Game {
     let strike = ballInFrame == 1 && knocked == 10
     let spare = ballInFrame == 2 && pinsRemaining == 0
 
+    let baseCallout: String
+    let frameOver = strike || ballInFrame == 2  // capture before any mutation
     if strike {
       statusLine = "STRIKE! \(knocked) pins · total \(score)"
-      GameAudio.shared.speak("Strike! Total \(score).")
-      advanceFrame()
+      baseCallout = "Strike! Total \(score)."
     } else if ballInFrame == 2 || spare {
       statusLine = (spare ? "Spare! " : "") + "Rolled \(knocked) · total \(score)"
-      GameAudio.shared.speak(
-        (spare ? "Spare. " : "") + "\(knocked) pins. Total \(score)."
-      )
-      advanceFrame()
+      baseCallout = (spare ? "Spare. " : "") + "\(knocked) pins. Total \(score)."
     } else {
       ballInFrame = 2
       statusLine = "Rolled \(knocked) · \(pinsRemaining) left — flick again"
-      GameAudio.shared.speak("\(knocked) pins. \(pinsRemaining) left.")
+      baseCallout = "\(knocked) pins. \(pinsRemaining) left."
+    }
+
+    // Fold game-over into the same callout so it doesn't clobber the
+    // queued speak() in playBowlSequence.
+    let isFinalRoll = frameOver && frame >= totalFrames
+    let callout =
+      isFinalRoll ? "\(baseCallout) Game over. Final score \(score)." : baseCallout
+
+    // Plays thump → rolling → crash → speaks the callout, ~2.2s arc.
+    GameAudio.shared.playBowlSequence(scoreCallout: callout)
+
+    if frameOver {
+      advanceFrame()
     }
   }
 
@@ -76,7 +87,6 @@ final class BowlingGame: ObservableObject, Game {
     if frame >= totalFrames {
       isFinished = true
       statusLine = "Game over · final score \(score)"
-      GameAudio.shared.speak("Game over. Final score \(score).")
       return
     }
     frame += 1
