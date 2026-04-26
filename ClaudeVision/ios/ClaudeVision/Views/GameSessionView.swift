@@ -22,6 +22,11 @@ struct GameSessionView: View {
   /// Once you tap the X you don't see the how-to-play hint again this
   /// session.
   @State private var dismissedCoaching: Set<String> = []
+  /// Per-aim-window state for the bowling ball picker. The user can
+  /// swipe the picker off-screen left or right after choosing a ball;
+  /// it stays dismissed until the next `.idle` phase begins.
+  @State private var bowlingPickerDismissed: Bool = false
+  @State private var bowlingPickerDragOffset: CGFloat = 0
 
   var body: some View {
     guard let game = activeGame else {
@@ -60,17 +65,21 @@ struct GameSessionView: View {
             heroContainer(for: game)
               .frame(maxWidth: .infinity, maxHeight: .infinity)
           } else {
-            // Compact bowling chrome over the lane: scoreboard up top,
-            // ball picker just below, everything else flexed down.
+            // Bowling: top bar stays at the top; everything else gets
+            // pushed to the bottom of the screen so the lane is visible
+            // through the middle. Order from the bottom up: motion bar,
+            // coaching panel, scoreboard, ball picker.
+            Spacer(minLength: 0)
+            if let bowlingGame = game as? BowlingGame,
+              bowlingGame.phase == .idle,
+              !bowlingPickerDismissed
+            {
+              bowlingBallPickerSection(for: bowlingGame)
+            }
             BowlingScoreboard(frames: bowlingFrames(game), total: game.score)
               .fixedSize(horizontal: false, vertical: true)
               .background(.ultraThinMaterial)
               .clipShape(RoundedRectangle(cornerRadius: 6))
-            if let bowlingGame = game as? BowlingGame, bowlingGame.phase == .idle {
-              BowlingBallPicker(game: bowlingGame, tint: tint(for: game))
-                .transition(.opacity)
-            }
-            Spacer(minLength: 0)
           }
           if !dismissedCoaching.contains(game.id) {
             coachingPanel(for: game)
@@ -114,6 +123,14 @@ struct GameSessionView: View {
         eventSub = nil
         progress.clearPendingHighScore()
       }
+      .onChange(of: (game as? BowlingGame)?.phase) { _, newPhase in
+        // A new aim window resets the picker dismissal so the player
+        // gets a fresh choice for each ball.
+        if newPhase == .idle {
+          bowlingPickerDismissed = false
+          bowlingPickerDragOffset = 0
+        }
+      }
       .sheet(isPresented: $showShareSheet) {
         if let img = shareImage {
           ShareSheet(items: [img])
@@ -150,6 +167,38 @@ struct GameSessionView: View {
   /// called unconditionally from the chrome layout.
   private func bowlingFrames(_ game: any Game) -> [BowlingGame.FrameDisplay] {
     (game as? BowlingGame)?.frameDisplays ?? []
+  }
+
+  /// Wraps the BowlingBallPicker with a horizontal-drag-to-dismiss
+  /// gesture. The user can swipe the picker off either side of the
+  /// screen after they've chosen a ball; it auto-comes-back on the
+  /// next aim window via the `.onChange(of: phase)` reset on the body.
+  private func bowlingBallPickerSection(for game: BowlingGame) -> some View {
+    let dismissDistance: CGFloat = 80
+    return BowlingBallPicker(game: game, tint: tint(for: game))
+      .offset(x: bowlingPickerDragOffset)
+      .gesture(
+        DragGesture(minimumDistance: 16)
+          .onChanged { value in
+            // Only treat predominantly-horizontal drags as dismiss intent.
+            if abs(value.translation.width) > abs(value.translation.height) {
+              bowlingPickerDragOffset = value.translation.width
+            }
+          }
+          .onEnded { value in
+            if abs(value.translation.width) > dismissDistance {
+              withAnimation(.easeOut(duration: 0.22)) {
+                bowlingPickerDragOffset = value.translation.width > 0 ? 900 : -900
+                bowlingPickerDismissed = true
+              }
+            } else {
+              withAnimation(.spring(response: 0.32, dampingFraction: 0.8)) {
+                bowlingPickerDragOffset = 0
+              }
+            }
+          }
+      )
+      .transition(.opacity)
   }
 
   private func tint(for game: any Game) -> Color {

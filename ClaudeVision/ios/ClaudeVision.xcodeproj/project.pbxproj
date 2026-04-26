@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0229A441F96690BB179F9CE0 /* MotionClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3015387732FC86391673FEFC /* MotionClassifier.swift */; };
 		04A095977CA356A7BD617DCA /* PingPongGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66490A5375027C18E299220F /* PingPongGame.swift */; };
+		09C3BDFBC800407EF7773E69 /* BowlingCameraTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720B4F07C5BE76B40BAB3F2A /* BowlingCameraTracker.swift */; };
 		0B0D43D05DD7AA9061DBBC52 /* MWDATCore in Frameworks */ = {isa = PBXBuildFile; productRef = 56D471E4C1D0316E974B9E9D /* MWDATCore */; };
 		26DF4D6AB4300A244E2F9993 /* MWDATCamera in Frameworks */ = {isa = PBXBuildFile; productRef = F89EE55D2F5EFD824C5EAAA1 /* MWDATCamera */; };
 		2A77669B0885E5690DB0E5B9 /* GestureRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A8D0C3C3C22FDAC032A85DD /* GestureRecorder.swift */; };
@@ -75,6 +76,7 @@
 		6CC34BA60D99796648D08667 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		704D8A46187AD105F8BE0E3F /* FrameSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameSource.swift; sourceTree = "<group>"; };
 		70B272A2340AACC654015328 /* TestScenarios.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestScenarios.swift; sourceTree = "<group>"; };
+		720B4F07C5BE76B40BAB3F2A /* BowlingCameraTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BowlingCameraTracker.swift; sourceTree = "<group>"; };
 		7450C70EEB82980645E55B72 /* ArcheryGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcheryGame.swift; sourceTree = "<group>"; };
 		7A761184267980942BC955F3 /* ProgressStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressStore.swift; sourceTree = "<group>"; };
 		7AC42963AADF2B0A8A5AC60C /* BowlingSceneController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BowlingSceneController.swift; sourceTree = "<group>"; };
@@ -176,6 +178,7 @@
 		31237308340DA3B496BA69AF /* Bowling */ = {
 			isa = PBXGroup;
 			children = (
+				720B4F07C5BE76B40BAB3F2A /* BowlingCameraTracker.swift */,
 				5915F977AA07A85391A894E2 /* BowlingPinTracker.swift */,
 				6453D2CFFB0F8358DE9E95E0 /* BowlingScene.swift */,
 				7AC42963AADF2B0A8A5AC60C /* BowlingSceneController.swift */,
@@ -325,6 +328,7 @@
 				8DEA96294AD4A1C68EBF910E /* AppIconManager.swift in Sources */,
 				EF22011091DAB224D43F0D0F /* ArcheryGame.swift in Sources */,
 				AA875A1E28A9B92161751A5D /* ArcheryVenues.swift in Sources */,
+				09C3BDFBC800407EF7773E69 /* BowlingCameraTracker.swift in Sources */,
 				5E1CD10EEF09F9EDC673581F /* BowlingGame.swift in Sources */,
 				5A4C630503D58FEBCA9730BE /* BowlingPinTracker.swift in Sources */,
 				51FE97FB0700AABB8F858703 /* BowlingScene.swift in Sources */,

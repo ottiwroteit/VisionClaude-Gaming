@@ -28,6 +28,10 @@ struct BowlingScene: UIViewRepresentable {
     view.preferredFramesPerSecond = 60
     view.rendersContinuously = true
     view.autoenablesDefaultLighting = false
+    // Render-thread camera follow. The tracker captures the ball and
+    // camera nodes on init and lerps the camera Z toward the ball Z
+    // every frame when the controller has flipped its `followingEnabled`.
+    view.delegate = context.coordinator.cameraTracker
     return view
   }
 

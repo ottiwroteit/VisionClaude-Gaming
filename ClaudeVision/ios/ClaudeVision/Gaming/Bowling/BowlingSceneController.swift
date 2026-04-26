@@ -45,6 +45,10 @@ final class BowlingSceneController: NSObject {
   private var keyLightNode: SCNNode!
   private var ambientLightNode: SCNNode!
   private var pinHomePositions: [SCNVector3] = []
+  /// Render-thread camera follow. Owned by the controller, installed
+  /// as the SCNView's delegate by the SwiftUI wrapper. Built once the
+  /// ball + camera nodes exist (end of `buildScene`).
+  private(set) var cameraTracker: BowlingCameraTracker!
 
   // MARK: Tunables
 
@@ -226,6 +230,11 @@ final class BowlingSceneController: NSObject {
     ambientLightNode = SCNNode()
     ambientLightNode.light = ambient
     root.addChildNode(ambientLightNode)
+
+    // Render-thread camera follow tracker — built last because it
+    // captures the final camera home position from the just-positioned
+    // cameraNode.
+    cameraTracker = BowlingCameraTracker(ballNode: ballNode, cameraNode: cameraNode)
   }
 
   private func makeGutter(side: Float) -> SCNNode {
@@ -379,16 +388,23 @@ final class BowlingSceneController: NSObject {
     switch phase {
     case .countingDown:
       // New turn — make sure the ball is back home and the previous
-      // roll's settle task is dead.
+      // roll's settle task is dead. Camera returns to its home pose.
       settleTask?.cancel()
       settleTask = nil
       resetBallToHome()
+      cameraTracker.followingEnabled = false
     case .idle:
-      break
+      cameraTracker.followingEnabled = false
     case .rolling:
+      cameraTracker.followingEnabled = true
       launchBall()
-    case .knocking, .resetting, .finalScoring:
+    case .knocking:
+      // Keep tracking the ball while pins are still tumbling, then the
+      // settle delay flips us into resetting/idle and the camera pulls
+      // back home.
       break
+    case .resetting, .finalScoring:
+      cameraTracker.followingEnabled = false
     }
   }
 
