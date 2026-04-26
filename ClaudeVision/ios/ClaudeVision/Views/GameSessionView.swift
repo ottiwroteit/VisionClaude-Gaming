@@ -403,6 +403,14 @@ private struct BowlingArt: View {
             .frame(maxHeight: .infinity, alignment: .top)
             .padding(.top, 14)
 
+          // QubicaAMF-style pinspotter: overhead rack that descends to
+          // pick up standing pins, sweep bar that clears fallen pins.
+          BowlingPinSpotter(
+            phase: game.phase,
+            laneWidth: geo.size.width,
+            laneHeight: geo.size.height
+          )
+
           // Ball — visible only while rolling/knocking, animates from
           // bottom (player) to top (pins). On a gutter ball it curves
           // toward the appropriate side instead of going straight.
@@ -649,6 +657,103 @@ private struct BowlingBallView: View {
     }
     .frame(width: size, height: size)
     .overlay(Circle().stroke(Color.black.opacity(0.45), lineWidth: 1))
+  }
+}
+
+// MARK: - Bowling pinspotter mechanism
+// Mimics the QubicaAMF-style pinsetter: an overhead rack descends to
+// pick up standing pins, a sweep bar drops down and pushes fallen pins
+// off the back of the deck, then the rack returns either with the
+// picked-up pins (mid-frame) or a fresh full rack (frame end).
+
+private struct BowlingPinSpotter: View {
+  let phase: BowlingGame.RollPhase
+  let laneWidth: CGFloat
+  let laneHeight: CGFloat
+
+  // 0 = retracted up out of view, 1 = fully descended over the pin deck.
+  @State private var rackDown: CGFloat = 0
+  // -0.2 = above the pin deck, 1.1 = below it (just past the pins).
+  @State private var sweepProgress: CGFloat = -0.2
+
+  private var pinAreaTop: CGFloat { 6 }
+  private var pinAreaBottom: CGFloat { laneHeight * 0.50 }
+  private var pinAreaHeight: CGFloat { pinAreaBottom - pinAreaTop }
+  private var rackWidth: CGFloat { laneWidth * 0.62 }
+
+  var body: some View {
+    ZStack(alignment: .top) {
+      // Overhead rail — always faintly visible; it's the structure the
+      // rack hangs from.
+      Rectangle()
+        .fill(Color(white: 0.18))
+        .frame(width: laneWidth * 0.72, height: 4)
+        .overlay(Rectangle().stroke(Color.black.opacity(0.6), lineWidth: 1))
+        .position(x: laneWidth / 2, y: 4)
+
+      // Pinspotter rack — a chunky bar with 10 vertical "spots" (small
+      // hangers where pins clip in). Descends from the overhead rail.
+      VStack(spacing: 2) {
+        Rectangle()
+          .fill(Color(white: 0.30))
+          .frame(width: rackWidth, height: 6)
+          .overlay(Rectangle().stroke(Color.black, lineWidth: 1))
+        HStack(spacing: 4) {
+          ForEach(0..<10, id: \.self) { _ in
+            Rectangle()
+              .fill(Color(white: 0.40))
+              .frame(width: 4, height: 8)
+          }
+        }
+      }
+      .position(x: laneWidth / 2, y: pinAreaTop + rackDown * (pinAreaHeight * 0.5))
+      .opacity(Double(rackDown))
+
+      // Sweep bar — wide flat blade that descends and traverses the
+      // pin deck top-to-bottom (in screen coords), pushing fallen pins
+      // off the back.
+      Rectangle()
+        .fill(Color(white: 0.25))
+        .frame(width: laneWidth * 0.78, height: 7)
+        .overlay(Rectangle().stroke(Color.black, lineWidth: 1))
+        .position(
+          x: laneWidth / 2,
+          y: pinAreaTop + sweepProgress * pinAreaHeight
+        )
+        .opacity(sweepProgress > -0.2 && sweepProgress < 1.05 ? 1 : 0)
+    }
+    .onChange(of: phase) { _, newPhase in
+      runMechanism(for: newPhase)
+    }
+  }
+
+  private func runMechanism(for phase: BowlingGame.RollPhase) {
+    switch phase {
+    case .knocking:
+      // Wait for pins to visibly fall, then drop the rack to "pick up"
+      // standing pins, then the sweep traverses the deck.
+      Task { @MainActor in
+        try? await Task.sleep(nanoseconds: 300_000_000)
+        withAnimation(.easeIn(duration: 0.25)) { rackDown = 1 }
+        try? await Task.sleep(nanoseconds: 280_000_000)
+        sweepProgress = -0.2
+        withAnimation(.linear(duration: 0.45)) { sweepProgress = 1.1 }
+      }
+    case .resetting:
+      // Sweep finishes off-screen; the rack lifts back up with either
+      // standing pins replaced or a fresh rack of 10 (the model handles
+      // the actual pin-state reset).
+      Task { @MainActor in
+        try? await Task.sleep(nanoseconds: 150_000_000)
+        withAnimation(.easeOut(duration: 0.35)) { rackDown = 0 }
+      }
+    case .idle, .rolling, .finalScoring:
+      // Make sure the mechanism is parked when we go back to play.
+      withAnimation(.easeOut(duration: 0.2)) {
+        rackDown = 0
+        sweepProgress = -0.2
+      }
+    }
   }
 }
 
