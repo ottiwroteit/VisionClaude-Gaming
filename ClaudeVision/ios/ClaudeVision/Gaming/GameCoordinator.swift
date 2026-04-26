@@ -16,6 +16,7 @@ final class GameCoordinator: ObservableObject {
   private var games: [String: any Game] = [:]
   private var activeGame: (any Game)?
   private var eventSubscription: AnyCancellable?
+  private var motionSubscription: AnyCancellable?
   private var frameSubscription: AnyCancellable?
   private var activeGameSubscription: AnyCancellable?
 
@@ -26,6 +27,11 @@ final class GameCoordinator: ObservableObject {
       self.lastEventLabel =
         "\(event.kind.rawValue) \(event.direction.rawValue) m=\(String(format: "%.2f", event.magnitude))"
       self.activeGame?.handle(event)
+    }
+    // Forward continuous motion to the active game for real-time controls
+    // (e.g. bowling aim) without waiting for a discrete classified event.
+    motionSubscription = engine.$liveVector.sink { [weak self] vector in
+      self?.activeGame?.handleMotion(vector)
     }
   }
 

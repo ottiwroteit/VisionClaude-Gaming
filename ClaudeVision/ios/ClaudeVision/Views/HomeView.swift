@@ -120,7 +120,7 @@ struct HomeView: View {
   }
 
   private var subtitle: String {
-    if rayBan.isRunning { return "\(rayBan.frameCount) frames captured" }
+    if rayBan.isRunning { return "Live feed" }
     if rayBan.isRegistered { return "Ready to stream" }
     return "Not connected"
   }

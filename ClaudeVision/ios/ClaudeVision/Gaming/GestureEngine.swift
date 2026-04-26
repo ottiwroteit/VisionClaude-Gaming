@@ -25,6 +25,10 @@ final class GestureEngine: ObservableObject {
   @Published private(set) var isRunning: Bool = false
   @Published private(set) var lastEvent: GestureEvent = .zero
   @Published private(set) var liveMagnitude: Float = 0
+  /// The live optical-flow vector (per-second, head-direction-correct).
+  /// Games can tap this for continuous controls like aiming, instead of
+  /// only reacting to discrete classified events.
+  @Published private(set) var liveVector: SIMD2<Float> = .zero
 
   private let classifier = MotionClassifier()
   private var previousCGImage: CGImage?
@@ -70,6 +74,10 @@ final class GestureEngine: ObservableObject {
       Task { @MainActor [weak self] in
         guard let self else { return }
         self.liveMagnitude = simd_length(perSecond)
+        // Invert the flow vector so x>0 means the head turned RIGHT
+        // (matches the same convention MotionClassifier uses for its
+        // discrete .left/.right direction labels).
+        self.liveVector = -perSecond
         let sample = MotionClassifier.Sample(vector: perSecond, timestamp: timestamp)
         if let event = self.classifier.ingest(sample) {
           self.lastEvent = event

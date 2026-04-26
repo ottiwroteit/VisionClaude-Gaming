@@ -358,6 +358,7 @@ private struct BowlingArt: View {
   var body: some View {
     VStack(spacing: 8) {
       BowlingScoreboard(frames: game.frameDisplays, total: game.score)
+        .fixedSize(horizontal: false, vertical: true)
 
       HStack {
         Text("Frame \(game.frame)").font(.caption.bold())
@@ -544,6 +545,9 @@ private struct BowlingArt: View {
     switch game.phase {
     case .countingDown: return "Get ready…"
     case .idle:
+      if let remaining = game.aimTimeRemaining {
+        return "Aim · \(Int(remaining.rounded(.up)))s"
+      }
       return game.lastRoll > 0 ? "Last roll: \(game.lastRoll)" : "Ready"
     case .rolling: return "Rolling…"
     case .knocking: return "Pins falling…"
