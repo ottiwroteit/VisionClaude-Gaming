@@ -352,6 +352,8 @@ private struct BowlingArt: View {
 
   // 1 = ball at the player end (bottom), 0 = ball at the pins (top).
   @State private var ballRollProgress: Double = 1
+  // Lane shake offset for celebration impact. Decays back to .zero.
+  @State private var shakeOffset: CGSize = .zero
 
   var body: some View {
     VStack(spacing: 8) {
@@ -376,27 +378,59 @@ private struct BowlingArt: View {
             .fill(
               LinearGradient(
                 colors: [
-                  Color(red: 0.42, green: 0.30, blue: 0.18),  // far wood
-                  Color(red: 0.62, green: 0.45, blue: 0.28),  // near wood
+                  Color(red: 0.32, green: 0.22, blue: 0.12),  // far wood (deeper)
+                  Color(red: 0.68, green: 0.50, blue: 0.30),  // near wood (warmer)
                 ],
                 startPoint: .top,
                 endPoint: .bottom
               )
             )
             .overlay(
+              // Wood-grain plank lines running down the lane.
               BowlingLaneShape()
-                .stroke(Color.black.opacity(0.4), lineWidth: 1)
+                .clipShape(BowlingLaneShape())
+                .overlay(BowlingLaneGrain())
+                .opacity(0.25)
+            )
+            .overlay(
+              // Glossy reflective sheen — light vertical band centered.
+              BowlingLaneShape()
+                .fill(
+                  LinearGradient(
+                    colors: [
+                      Color.white.opacity(0.18),
+                      Color.white.opacity(0.0),
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                  )
+                )
+                .blendMode(.screen)
+            )
+            .overlay(
+              BowlingLaneShape()
+                .stroke(Color.black.opacity(0.5), lineWidth: 1)
             )
 
           // Lane stripe down the middle for perspective hint.
           BowlingLaneStripe()
-            .stroke(Color.white.opacity(0.15), lineWidth: 1)
+            .stroke(Color.white.opacity(0.18), lineWidth: 1)
 
-          // Gutters — black bars on either side of the lane.
+          // Gutters — recessed channels.
           BowlingGutterShape(side: .left)
-            .fill(Color.black.opacity(0.85))
+            .fill(
+              LinearGradient(
+                colors: [Color.black, Color(white: 0.15)],
+                startPoint: .leading, endPoint: .trailing
+              )
+            )
           BowlingGutterShape(side: .right)
-            .fill(Color.black.opacity(0.85))
+            .fill(
+              LinearGradient(
+                colors: [Color(white: 0.15), Color.black],
+                startPoint: .leading, endPoint: .trailing
+              )
+            )
 
           // Pins in triangle formation at the back (top) of the lane.
           pinsLayout
@@ -434,14 +468,43 @@ private struct BowlingArt: View {
           // bottom (player) to top (pins). On a gutter ball it curves
           // toward the appropriate side instead of going straight.
           if showsBall {
+            // Soft glow under the ball.
+            Circle()
+              .fill(tint.opacity(0.45))
+              .frame(
+                width: ballSize(progress: ballRollProgress) * 1.6,
+                height: ballSize(progress: ballRollProgress) * 1.6
+              )
+              .blur(radius: 12)
+              .position(ballPosition(progress: ballRollProgress, geo: geo))
             BowlingBallView(size: ballSize(progress: ballRollProgress), tint: tint)
               .position(ballPosition(progress: ballRollProgress, geo: geo))
               .transition(.opacity)
           }
+
+          // Strike / spare celebration: particle burst + giant pop-up text.
+          BowlingCelebration(
+            outcome: game.lastOutcome,
+            rollNumber: game.rollNumber,
+            laneWidth: geo.size.width,
+            laneHeight: geo.size.height,
+            tint: tint
+          )
+          .allowsHitTesting(false)
         }
       }
       .frame(height: 240)
       .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.medium))
+      .offset(x: shakeOffset.width, y: shakeOffset.height)
+      .onChange(of: game.rollNumber) { _, _ in
+        // Trigger screen shake on strike. Spare gets a softer shake.
+        guard let outcome = game.lastOutcome else { return }
+        if outcome == .strike {
+          shake(intensity: 6)
+        } else if outcome == .spare {
+          shake(intensity: 3)
+        }
+      }
 
       HStack {
         Text("Total \(game.score)").font(.caption.bold())
@@ -520,26 +583,37 @@ private struct BowlingArt: View {
     // Stable per-pin tilt direction so the same pin always falls the same
     // way (no flicker between renders).
     let tiltDeg = (displayIndex % 2 == 0 ? 1.0 : -1.0) * 55.0
-    return BowlingPinShape()
-      .fill(
-        LinearGradient(
-          colors: [Color.white, Color(white: 0.85)],
-          startPoint: .topLeading,
-          endPoint: .bottomTrailing
+    return ZStack(alignment: .bottom) {
+      // Soft elliptical shadow under each pin so the rack reads as 3D
+      // resting on the lane.
+      Ellipse()
+        .fill(Color.black.opacity(isFallen ? 0.12 : 0.35))
+        .frame(width: 14, height: 5)
+        .blur(radius: 1.5)
+        .offset(y: 4)
+
+      BowlingPinShape()
+        .fill(
+          LinearGradient(
+            colors: [Color.white, Color(white: 0.85)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+          )
         )
-      )
-      .overlay(
-        // Red neck stripe (real bowling pin detail).
-        Rectangle()
-          .fill(Color.red)
-          .frame(width: 10, height: 2)
-          .offset(y: -7)
-      )
-      .frame(width: 14, height: 30)
-      .opacity(isFallen ? 0.25 : 1)
-      .rotationEffect(.degrees(isFallen ? tiltDeg : 0), anchor: .bottom)
-      .scaleEffect(y: isFallen ? 0.55 : 1, anchor: .bottom)
-      .animation(.spring(response: 0.45, dampingFraction: 0.55), value: isFallen)
+        .overlay(
+          // Red neck stripe (real bowling pin detail).
+          Rectangle()
+            .fill(Color.red)
+            .frame(width: 10, height: 2)
+            .offset(y: -7)
+        )
+        .frame(width: 14, height: 30)
+        .opacity(isFallen ? 0.25 : 1)
+        .rotationEffect(.degrees(isFallen ? tiltDeg : 0), anchor: .bottom)
+        .scaleEffect(y: isFallen ? 0.55 : 1, anchor: .bottom)
+        .animation(.spring(response: 0.45, dampingFraction: 0.55), value: isFallen)
+    }
+    .frame(width: 14, height: 30)
   }
 
   // MARK: - Ball trajectory
@@ -576,6 +650,23 @@ private struct BowlingArt: View {
 
   private func lerp(_ a: Double, _ b: Double, _ t: Double) -> Double {
     a + (b - a) * t
+  }
+
+  /// Three-stage screen shake: snap one direction, snap the other, settle.
+  /// Intensity is the peak offset in points.
+  private func shake(intensity: CGFloat) {
+    let i = intensity
+    Task { @MainActor in
+      withAnimation(.easeOut(duration: 0.06)) { shakeOffset = CGSize(width: -i, height: i / 2) }
+      try? await Task.sleep(nanoseconds: 60_000_000)
+      withAnimation(.easeInOut(duration: 0.08)) { shakeOffset = CGSize(width: i, height: -i / 2) }
+      try? await Task.sleep(nanoseconds: 80_000_000)
+      withAnimation(.easeInOut(duration: 0.08)) {
+        shakeOffset = CGSize(width: -i / 2, height: i / 3)
+      }
+      try? await Task.sleep(nanoseconds: 80_000_000)
+      withAnimation(.spring(response: 0.25, dampingFraction: 0.6)) { shakeOffset = .zero }
+    }
   }
 }
 
@@ -678,6 +769,148 @@ private struct BowlingBallView: View {
     }
     .frame(width: size, height: size)
     .overlay(Circle().stroke(Color.black.opacity(0.45), lineWidth: 1))
+  }
+}
+
+// MARK: - Bowling lane wood grain
+// Vertical plank lines (with mild perspective inset toward the top) to
+// suggest a polished wood lane. Drawn as paths so they line up with the
+// trapezoid lane shape.
+
+private struct BowlingLaneGrain: Shape {
+  func path(in rect: CGRect) -> Path {
+    var p = Path()
+    let w = rect.width
+    let h = rect.height
+    let topInset = w * LaneGeo.topLaneInset
+    let bottomInset = w * LaneGeo.bottomLaneInset
+    let topLane = w - 2 * topInset
+    let bottomLane = w - 2 * bottomInset
+    let planks = 7
+    for i in 0...planks {
+      let frac = CGFloat(i) / CGFloat(planks)
+      let topX = topInset + frac * topLane
+      let bottomX = bottomInset + frac * bottomLane
+      p.move(to: CGPoint(x: bottomX, y: h))
+      p.addLine(to: CGPoint(x: topX, y: 0))
+    }
+    return
+      p
+      .strokedPath(StrokeStyle(lineWidth: 0.5, lineCap: .round))
+  }
+}
+
+// MARK: - Bowling celebration overlay
+// Strike → giant "STRIKE!" pop-up + radial particle burst from the pin
+// area. Spare → softer "SPARE!" pop-up + smaller burst. Triggered off
+// game.rollNumber so re-entering the same outcome still re-fires.
+
+private struct BowlingCelebration: View {
+  let outcome: BowlingGame.RollOutcome?
+  let rollNumber: Int
+  let laneWidth: CGFloat
+  let laneHeight: CGFloat
+  let tint: Color
+
+  @State private var lastShownRoll: Int = 0
+  @State private var visibleOutcome: BowlingGame.RollOutcome? = nil
+  @State private var textScale: CGFloat = 0.3
+  @State private var textOpacity: Double = 0
+  @State private var particles: [Particle] = []
+
+  private struct Particle: Identifiable {
+    let id = UUID()
+    let angle: Double
+    let distance: CGFloat
+    let size: CGFloat
+    let color: Color
+    var progress: CGFloat = 0
+  }
+
+  var body: some View {
+    ZStack {
+      // Particles emanating from the pin area (top-center).
+      ForEach(particles) { p in
+        Circle()
+          .fill(p.color)
+          .frame(width: p.size, height: p.size)
+          .position(
+            x: laneWidth / 2 + cos(p.angle) * p.distance * p.progress,
+            y: laneHeight * 0.25 + sin(p.angle) * p.distance * p.progress
+          )
+          .opacity(Double(1 - p.progress))
+      }
+
+      // Big pop-up text.
+      if let o = visibleOutcome, let label = label(for: o) {
+        Text(label)
+          .font(.system(size: 48, weight: .black, design: .rounded))
+          .foregroundColor(tint)
+          .shadow(color: .black.opacity(0.6), radius: 0, x: 4, y: 4)
+          .scaleEffect(textScale)
+          .opacity(textOpacity)
+          .rotationEffect(.degrees(-6))
+      }
+    }
+    .onChange(of: rollNumber) { _, newRoll in
+      // Fire only once per roll, and only for celebratory outcomes.
+      guard newRoll != lastShownRoll, let o = outcome else { return }
+      guard o == .strike || o == .spare else { return }
+      lastShownRoll = newRoll
+      fire(outcome: o)
+    }
+  }
+
+  private func label(for outcome: BowlingGame.RollOutcome) -> String? {
+    switch outcome {
+    case .strike: return "STRIKE!"
+    case .spare: return "SPARE!"
+    case .open, .gutter: return nil
+    }
+  }
+
+  private func fire(outcome: BowlingGame.RollOutcome) {
+    visibleOutcome = outcome
+    textScale = 0.3
+    textOpacity = 0
+    let count = outcome == .strike ? 32 : 18
+    let maxDistance: CGFloat = outcome == .strike ? 160 : 100
+    particles = (0..<count).map { _ in
+      Particle(
+        angle: Double.random(in: 0...(.pi * 2)),
+        distance: CGFloat.random(in: 60...maxDistance),
+        size: CGFloat.random(in: 4...10),
+        color: [tint, .yellow, .white, .orange].randomElement()!,
+        progress: 0
+      )
+    }
+
+    // Pop in.
+    withAnimation(.spring(response: 0.32, dampingFraction: 0.55)) {
+      textScale = 1.2
+      textOpacity = 1
+    }
+    // Particles fan out.
+    withAnimation(.easeOut(duration: 0.8)) {
+      for i in particles.indices {
+        particles[i].progress = 1
+      }
+    }
+    // Settle.
+    withAnimation(.easeInOut(duration: 0.18).delay(0.32)) {
+      textScale = 1.0
+    }
+    // Fade out and clear.
+    Task { @MainActor in
+      try? await Task.sleep(nanoseconds: 900_000_000)
+      withAnimation(.easeOut(duration: 0.35)) {
+        textOpacity = 0
+        textScale = 0.7
+      }
+      try? await Task.sleep(nanoseconds: 400_000_000)
+      visibleOutcome = nil
+      particles = []
+    }
   }
 }
 

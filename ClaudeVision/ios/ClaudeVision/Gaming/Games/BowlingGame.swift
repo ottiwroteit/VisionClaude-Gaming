@@ -59,6 +59,12 @@ final class BowlingGame: ObservableObject, Game {
   @Published private(set) var aimPosition: Float = 0
   /// Each LEFT/RIGHT tilt nudges aim by this fraction of [-1, +1].
   private let aimStep: Float = 0.25
+
+  /// Outcome of the most recent roll. The view watches this to trigger
+  /// arcade-style celebrations (particle burst, pop-up, screen shake)
+  /// when a strike or spare lands.
+  enum RollOutcome: Equatable { case strike, spare, open, gutter }
+  @Published private(set) var lastOutcome: RollOutcome? = nil
   @Published private(set) var statusLine: String = "Frame 1 · Ready to bowl"
   @Published private(set) var isFinished: Bool = false
   var activeModifier: VenueModifier = .default
@@ -284,15 +290,19 @@ final class BowlingGame: ObservableObject, Game {
     if gutter != nil {
       statusLine = "Gutter ball! 0 pins · total \(score)"
       baseCallout = "Gutter ball. Total \(score)."
+      lastOutcome = .gutter
     } else if isStrike {
       statusLine = "STRIKE! · total \(score)"
       baseCallout = "Strike! Total \(score)."
+      lastOutcome = .strike
     } else if isSpare {
       statusLine = "Spare! \(knocked) pins · total \(score)"
       baseCallout = "Spare! Total \(score)."
+      lastOutcome = .spare
     } else {
       statusLine = "\(knocked) pins · total \(score)"
       baseCallout = "\(knocked) pins. Total \(score)."
+      lastOutcome = .open
     }
 
     let willEndGame = isFinalRoll()
