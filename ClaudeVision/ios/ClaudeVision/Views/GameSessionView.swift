@@ -382,22 +382,26 @@ private struct BowlingArt: View {
             .frame(maxHeight: .infinity, alignment: .top)
             .padding(.top, 14)
 
-          // Ball — animates from bottom (player) to top (pins).
-          Circle()
-            .fill(
-              RadialGradient(
-                colors: [tint.opacity(0.95), tint.opacity(0.6)],
-                center: UnitPoint(x: 0.35, y: 0.35),
-                startRadius: 2,
-                endRadius: 25
+          // Ball — visible only while rolling/knocking, animates from
+          // bottom (player) to top (pins) over the rolling phase.
+          if showsBall {
+            Circle()
+              .fill(
+                RadialGradient(
+                  colors: [tint.opacity(0.95), tint.opacity(0.6)],
+                  center: UnitPoint(x: 0.35, y: 0.35),
+                  startRadius: 2,
+                  endRadius: 25
+                )
               )
-            )
-            .overlay(Circle().stroke(Color.black.opacity(0.4), lineWidth: 1))
-            .frame(
-              width: ballSize(progress: ballRollProgress),
-              height: ballSize(progress: ballRollProgress)
-            )
-            .position(ballPosition(progress: ballRollProgress, geo: geo))
+              .overlay(Circle().stroke(Color.black.opacity(0.4), lineWidth: 1))
+              .frame(
+                width: ballSize(progress: ballRollProgress),
+                height: ballSize(progress: ballRollProgress)
+              )
+              .position(ballPosition(progress: ballRollProgress, geo: geo))
+              .transition(.opacity)
+          }
         }
       }
       .frame(height: 240)
@@ -406,23 +410,45 @@ private struct BowlingArt: View {
       HStack {
         Text("Total \(game.score)").font(.caption.bold())
         Spacer()
-        if game.lastRoll > 0 {
-          Text("Last roll: \(game.lastRoll)")
-            .font(.caption2)
-            .foregroundColor(Theme.textSecondary)
-        }
+        Text(phaseHint)
+          .font(.caption2)
+          .foregroundColor(Theme.textSecondary)
       }
       .padding(.horizontal, 4)
     }
-    .onAppear {
-      ballRollProgress = 1
-    }
-    .onChange(of: game.rollNumber) { _, _ in
-      // Reset ball to player end, then animate to pins.
-      ballRollProgress = 1
-      withAnimation(.easeIn(duration: 1.5)) {
-        ballRollProgress = 0
+    .onChange(of: game.phase) { _, newPhase in
+      switch newPhase {
+      case .rolling:
+        // Ball appears at the player end and rolls toward the pins.
+        ballRollProgress = 1
+        withAnimation(.easeIn(duration: 1.5)) {
+          ballRollProgress = 0
+        }
+      case .knocking, .resetting, .idle, .finalScoring:
+        // No ball animation — view either holds at pins (knocking) or
+        // hides the ball entirely (idle/resetting/finalScoring).
+        break
       }
+    }
+  }
+
+  /// Ball is on screen during the roll itself and the brief pin-strike
+  /// hold. Hidden between rolls so it doesn't sit "stuck" in the pins.
+  private var showsBall: Bool {
+    switch game.phase {
+    case .rolling, .knocking: return true
+    default: return false
+    }
+  }
+
+  private var phaseHint: String {
+    switch game.phase {
+    case .idle:
+      return game.lastRoll > 0 ? "Last roll: \(game.lastRoll)" : "Ready"
+    case .rolling: return "Rolling…"
+    case .knocking: return "Pins falling…"
+    case .resetting: return "Resetting rack…"
+    case .finalScoring: return "Game complete"
     }
   }
 
@@ -549,50 +575,68 @@ private struct BowlingGutterShape: Shape {
 }
 
 private struct BowlingPinShape: Shape {
+  /// Real bowling-pin silhouette: small head, narrow neck, wide belly,
+  /// gentle waist, small flat base. Proportions taken from regulation
+  /// USBC pin specs (head ≈ 47% of widest, neck ≈ 39%, belly = widest,
+  /// base ≈ 43%) so it doesn't read as anything other than a pin.
   func path(in rect: CGRect) -> Path {
-    // Bowling-pin silhouette: narrow head, neck, wide base.
     var p = Path()
     let w = rect.width
     let h = rect.height
-    let headW = w * 0.55
-    let neckW = w * 0.4
-    let headH = h * 0.22
-    let neckBottomY = h * 0.55
-    let baseTopY = h * 0.6
-    // Right side, top-down.
-    p.move(to: CGPoint(x: (w + headW) / 2, y: headH * 0.3))
+    let cx = w * 0.5
+
+    // Half-widths (distance from center axis to silhouette edge).
+    let headHalf = w * 0.235  // small head
+    let neckHalf = w * 0.195  // narrowest waist
+    let bellyHalf = w * 0.50  // widest point
+    let waistHalf = w * 0.30  // gentle taper toward base
+    let baseHalf = w * 0.215  // small foot
+
+    let topY: CGFloat = 0
+    let headY = h * 0.18
+    let neckY = h * 0.30
+    let bellyY = h * 0.62
+    let waistY = h * 0.86
+    let baseY = h * 1.0
+
+    // Down the right side, top to bottom.
+    p.move(to: CGPoint(x: cx, y: topY))
     p.addQuadCurve(
-      to: CGPoint(x: (w + neckW) / 2, y: neckBottomY),
-      control: CGPoint(x: (w + neckW) / 2 + 1, y: headH * 1.3)
+      to: CGPoint(x: cx + headHalf, y: headY),
+      control: CGPoint(x: cx + headHalf, y: topY)
     )
     p.addQuadCurve(
-      to: CGPoint(x: w, y: baseTopY + (h - baseTopY) * 0.6),
-      control: CGPoint(x: w + 2, y: baseTopY)
+      to: CGPoint(x: cx + neckHalf, y: neckY),
+      control: CGPoint(x: cx + neckHalf, y: (headY + neckY) * 0.5)
     )
     p.addQuadCurve(
-      to: CGPoint(x: w / 2, y: h),
-      control: CGPoint(x: w * 0.95, y: h)
-    )
-    // Left side, bottom-up.
-    p.addQuadCurve(
-      to: CGPoint(x: 0, y: baseTopY + (h - baseTopY) * 0.6),
-      control: CGPoint(x: w * 0.05, y: h)
+      to: CGPoint(x: cx + bellyHalf, y: bellyY),
+      control: CGPoint(x: cx + bellyHalf, y: (neckY + bellyY) * 0.5)
     )
     p.addQuadCurve(
-      to: CGPoint(x: (w - neckW) / 2, y: neckBottomY),
-      control: CGPoint(x: -2, y: baseTopY)
+      to: CGPoint(x: cx + waistHalf, y: waistY),
+      control: CGPoint(x: cx + waistHalf, y: (bellyY + waistY) * 0.5)
+    )
+    p.addLine(to: CGPoint(x: cx + baseHalf, y: baseY))
+    // Across the bottom.
+    p.addLine(to: CGPoint(x: cx - baseHalf, y: baseY))
+    // Up the left side, bottom to top.
+    p.addLine(to: CGPoint(x: cx - waistHalf, y: waistY))
+    p.addQuadCurve(
+      to: CGPoint(x: cx - bellyHalf, y: bellyY),
+      control: CGPoint(x: cx - waistHalf, y: (bellyY + waistY) * 0.5)
     )
     p.addQuadCurve(
-      to: CGPoint(x: (w - headW) / 2, y: headH * 0.3),
-      control: CGPoint(x: (w - neckW) / 2 - 1, y: headH * 1.3)
+      to: CGPoint(x: cx - neckHalf, y: neckY),
+      control: CGPoint(x: cx - bellyHalf, y: (neckY + bellyY) * 0.5)
     )
-    // Top of head — semicircle.
-    p.addArc(
-      center: CGPoint(x: w / 2, y: headH * 0.3),
-      radius: headW / 2,
-      startAngle: .degrees(180),
-      endAngle: .degrees(360),
-      clockwise: false
+    p.addQuadCurve(
+      to: CGPoint(x: cx - headHalf, y: headY),
+      control: CGPoint(x: cx - neckHalf, y: (headY + neckY) * 0.5)
+    )
+    p.addQuadCurve(
+      to: CGPoint(x: cx, y: topY),
+      control: CGPoint(x: cx - headHalf, y: topY)
     )
     p.closeSubpath()
     return p
