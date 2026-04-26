@@ -44,6 +44,13 @@ struct GameSessionView: View {
           heroContainer(for: game)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .ignoresSafeArea()
+          if let bowlingGame = game as? BowlingGame {
+            BowlingPinTracker(game: bowlingGame, tint: tint(for: game))
+              .padding(.top, 150)
+              .padding(.leading, 14)
+              .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+              .allowsHitTesting(false)
+          }
         }
 
         VStack(spacing: isBowling ? 8 : 16) {
@@ -367,7 +374,10 @@ struct GameSessionView: View {
   @ViewBuilder
   private func heroArt(for game: any Game) -> some View {
     switch game.id {
-    case "bowling": if let g = game as? BowlingGame { BowlingArt(game: g) }
+    case "bowling":
+      if let g = game as? BowlingGame {
+        BowlingScene(game: g, venueID: progress.currentVenue(for: g.id).id)
+      }
     case "tennis": if let g = game as? TennisGame { TennisArt(game: g) }
     case "pingpong": if let g = game as? PingPongGame { PingPongArt(game: g) }
     case "boxing": if let g = game as? BoxingGame { BoxingArt(game: g) }

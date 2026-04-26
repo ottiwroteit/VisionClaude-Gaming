@@ -61,6 +61,15 @@ final class BowlingGame: ObservableObject, Game {
   /// `aimWindowDuration` to zero; on zero we auto-release whatever aim
   /// the player landed on.
   @Published private(set) var aimTimeRemaining: TimeInterval? = nil
+  /// Released ball intent — read by the SceneKit scene the moment phase
+  /// flips to `.rolling`. Power 0..1 maps to the forward impulse; hook
+  /// -1..+1 maps to lateral angular velocity (curve).
+  @Published private(set) var pendingPower: Float = 0
+  @Published private(set) var pendingHook: Float = 0
+  /// Wall-clock timestamp of the most recent .rolling transition. The
+  /// scene uses this as a synchronization point — the same value firing
+  /// twice would mean a duplicate launch, which would be a bug.
+  @Published private(set) var rollLaunchedAt: Date? = nil
 
   /// How long the player has to line up the shot once the countdown
   /// finishes. Picked to match arcade-style time pressure.
@@ -73,6 +82,13 @@ final class BowlingGame: ObservableObject, Game {
   /// The Task running the aim-window countdown — cancelled when the
   /// player commits early so we don't double-fire.
   private var aimTimerTask: Task<Void, Never>? = nil
+  /// Safety timer for the .rolling phase. Cancels itself the moment the
+  /// scene reports a settle; if it actually fires, the roll is treated
+  /// as a no-show gutter so the state machine never deadlocks.
+  private var physicsWatchdogTask: Task<Void, Never>? = nil
+  /// How long to wait for the SceneKit scene to report a roll outcome
+  /// before assuming the scene didn't run.
+  private let physicsTimeout: TimeInterval = 6.0
 
   /// Outcome of the most recent roll. The view watches this to trigger
   /// arcade-style celebrations (particle burst, pop-up, screen shake)
@@ -232,8 +248,10 @@ final class BowlingGame: ObservableObject, Game {
     return false
   }
 
-  // Phase timing — kept here so the view can stay in sync.
-  private let rollDuration: TimeInterval = 1.5
+  // Phase timing — kept here so the view can stay in sync. The roll
+  // duration is no longer game-controlled (the SceneKit physics runs at
+  // its own pace and reports back via physicsDidSettle); knockDuration
+  // is now the celebration/outcome display window after settle.
   private let knockDuration: TimeInterval = 0.8
   private let resetDuration: TimeInterval = 0.6
 
@@ -266,10 +284,11 @@ final class BowlingGame: ObservableObject, Game {
     guard event.kind == .flick else { return }
 
     // Horizontal flicks are ignored — aim is now driven by live head
-    // motion (handleMotion). Only chin UP/DOWN releases.
+    // motion (handleMotion). Only chin UP/DOWN releases. Curvature in
+    // the chin-flick path becomes the ball's hook.
     switch event.direction {
     case .up, .down:
-      releaseRoll(power: event.magnitude)
+      releaseRoll(power: event.magnitude, hook: event.lateralCurvature)
     case .left, .right, .none, .rollLeft, .rollRight, .forward, .backward:
       return
     }
@@ -287,39 +306,60 @@ final class BowlingGame: ObservableObject, Game {
     statusLine = aimLineLabel()
   }
 
-  /// Commits the current aim into a real ball release.
-  private func releaseRoll(power: Float) {
+  /// Commits the current aim into a real ball release. The actual pin
+  /// outcome is decided by the SceneKit scene's physics — this method
+  /// only stores the launch intent (power + hook + aim) and transitions
+  /// to `.rolling`. The scene observes the phase transition, applies an
+  /// impulse to its physics ball, and reports back via
+  /// `physicsDidSettle(knockedThisRoll:wasGutter:)`.
+  ///
+  /// A watchdog auto-resolves the roll as a gutter ball if the scene
+  /// fails to report back within `physicsTimeout` (e.g. the SceneKit
+  /// view never mounted), so the game can never get stuck in `.rolling`.
+  private func releaseRoll(power: Float, hook: Float = 0) {
     // Cancel the aim-window timer — we're rolling now.
     aimTimerTask?.cancel()
     aimTimerTask = nil
     aimTimeRemaining = nil
+    physicsWatchdogTask?.cancel()
 
-    // Extreme aim sends the ball into the gutter; otherwise the lateral
-    // accuracy taxes the pin count so a perfectly centered shot scores
-    // best and progressively worse aim knocks fewer pins.
     let absAim = abs(aimPosition)
-    let gutterSide: GutterSide?
-    let pendingKnock: Int
-    if absAim > 0.7 {
-      pendingKnock = 0
-      gutterSide = aimPosition < 0 ? .left : .right
-    } else {
-      let aimAccuracy = max(0, 1 - absAim / 0.7)  // 1 = bullseye, 0 = at gutter edge
-      let effectivePower = power * (0.5 + 0.5 * aimAccuracy)
-      pendingKnock = pinsKnocked(power: effectivePower, remaining: pinsRemaining)
-      gutterSide = nil
-    }
+    let gutterSide: GutterSide? =
+      absAim > 0.7 ? (aimPosition < 0 ? .left : .right) : nil
 
     gutter = gutterSide
     rollNumber += 1
+    pendingPower = max(0, min(1, power))
+    pendingHook = max(-1, min(1, hook))
+    rollLaunchedAt = Date()
     phase = .rolling
-    statusLine = gutterSide == nil ? "Rolling…" : "Gutter ball!"
+    statusLine = gutterSide == nil ? "Rolling…" : "Heading for the gutter!"
 
-    // Pins drop AFTER the ball arrives.
-    Task { @MainActor in
-      try? await Task.sleep(nanoseconds: nanos(rollDuration))
-      self.applyImpact(knocked: pendingKnock)
+    physicsWatchdogTask = Task { @MainActor in
+      try? await Task.sleep(nanoseconds: nanos(physicsTimeout))
+      guard !Task.isCancelled else { return }
+      // Scene never reported — treat the roll as a no-show gutter so
+      // the state machine keeps moving.
+      self.physicsDidSettle(knockedThisRoll: 0, wasGutter: true)
     }
+  }
+
+  /// Called by the SceneKit scene once the ball comes to rest and any
+  /// chain-reaction pin falls have stopped. `knockedThisRoll` is the
+  /// number of pins that newly toppled on this roll (NOT cumulative for
+  /// the frame). Safe to call at most once per `.rolling` phase — the
+  /// watchdog cancels itself on entry.
+  func physicsDidSettle(knockedThisRoll: Int, wasGutter: Bool = false) {
+    // Ignore stale callbacks that might arrive after we've already
+    // moved on (e.g. watchdog fires AND scene reports).
+    guard phase == .rolling else { return }
+    physicsWatchdogTask?.cancel()
+    physicsWatchdogTask = nil
+    if wasGutter, gutter == nil {
+      gutter = aimPosition < 0 ? .left : .right
+    }
+    let clamped = max(0, min(pinsRemaining, knockedThisRoll))
+    applyImpact(knocked: clamped)
   }
 
   private func aimLineLabel() -> String {
@@ -625,22 +665,6 @@ final class BowlingGame: ObservableObject, Game {
       return rolls[0] != 10 && rolls[0] + rolls[1] != 10
     }
     return false
-  }
-
-  // MARK: - Pin physics
-
-  /// Soft physics: low power rolls gutter, mid hits 4-7 pins, high flick
-  /// is a strike candidate. Sticky-lane modifier forgives weak rolls.
-  /// Higher venue difficulty = less generous random jitter.
-  private func pinsKnocked(power: Float, remaining: Int) -> Int {
-    let clamped = max(0, min(1, power))
-    let sticky = activeModifier.effect == .stickyLane ? Float(0.15) : 0
-    let adjusted = min(1, clamped + sticky)
-    let base = Float(remaining) * adjusted
-    let jitterRange = Float(1.5 / activeModifier.difficultyMultiplier)
-    let jitter = Float.random(in: -jitterRange...jitterRange)
-    let raw = Int((base + jitter).rounded())
-    return max(0, min(remaining, raw))
   }
 
   private func nanos(_ s: TimeInterval) -> UInt64 {
