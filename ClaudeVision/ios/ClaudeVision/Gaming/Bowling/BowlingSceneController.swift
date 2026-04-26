@@ -85,6 +85,26 @@ final class BowlingSceneController: NSObject {
 
   private var settleTask: Task<Void, Never>?
   private var lastObservedRoll: Int = 0
+  /// Set true on `.rolling` entry; flipped false the first time any
+  /// ball-vs-pin contact fires that roll. Stops the slow-mo and
+  /// celebration triggers from firing once per pin (a chain reaction
+  /// produces dozens of contacts).
+  private var firstContactPending: Bool = false
+  /// Background task that resets `physicsWorld.speed` after a slow-mo
+  /// burst. Cancelled if a new roll starts before the previous one
+  /// finished restoring normal speed.
+  private var slowMoTask: Task<Void, Never>?
+  private var lastOutcomeSub: AnyCancellable?
+
+  // MARK: Physics categories
+
+  /// Bitmasks used to identify what's colliding from the contact
+  /// delegate without doing pointer-equality on the node references.
+  /// `nonisolated` so the contact delegate method (which itself is
+  /// nonisolated) can read them without an actor-hop.
+  private nonisolated static let ballCategory: Int = 1 << 1
+  private nonisolated static let pinCategory: Int = 1 << 2
+  private nonisolated static let staticCategory: Int = 1 << 3
 
   // MARK: Init
 
@@ -96,10 +116,15 @@ final class BowlingSceneController: NSObject {
     buildScene()
     applyTheme(theme)
     observeGame()
+    // Set after buildScene so the ball + pin nodes already have their
+    // category bitmasks. The delegate fires from the SceneKit render
+    // thread; bridges to MainActor inside the protocol method.
+    scene.physicsWorld.contactDelegate = self
   }
 
   deinit {
     settleTask?.cancel()
+    slowMoTask?.cancel()
   }
 
   // MARK: Scene construction
@@ -196,6 +221,8 @@ final class BowlingSceneController: NSObject {
     ballBody.restitution = 0.05
     ballBody.angularDamping = 0.05
     ballBody.damping = 0.08
+    ballBody.categoryBitMask = Self.ballCategory
+    ballBody.contactTestBitMask = Self.pinCategory
     ballNode.physicsBody = ballBody
     root.addChildNode(ballNode)
 
@@ -291,6 +318,7 @@ final class BowlingSceneController: NSObject {
     body.damping = 0.05
     body.angularDamping = 0.1
     body.allowsResting = true
+    body.categoryBitMask = Self.pinCategory
     node.physicsBody = body
     return node
   }
@@ -376,6 +404,16 @@ final class BowlingSceneController: NSObject {
         self.rackPins()
       }
     }
+    // Turkey celebration: fires when applyImpact has just registered a
+    // strike AND the player is now on fire (consecutiveStrikes ≥ 3).
+    // Uses lastOutcome as the trigger because consecutiveStrikes is
+    // not @Published; observing lastOutcome catches the same edge.
+    lastOutcomeSub = game.$lastOutcome.receive(on: RunLoop.main).sink { [weak self] outcome in
+      guard let self, let game = self.game else { return }
+      if outcome == .strike && game.consecutiveStrikes >= 3 {
+        self.triggerFireworks()
+      }
+    }
     applyBallSkin()
   }
 
@@ -391,12 +429,15 @@ final class BowlingSceneController: NSObject {
       // roll's settle task is dead. Camera returns to its home pose.
       settleTask?.cancel()
       settleTask = nil
+      slowMoTask?.cancel()
+      scene.physicsWorld.speed = 1.0
       resetBallToHome()
       cameraTracker.followingEnabled = false
     case .idle:
       cameraTracker.followingEnabled = false
     case .rolling:
       cameraTracker.followingEnabled = true
+      firstContactPending = true
       launchBall()
     case .knocking:
       // Keep tracking the ball while pins are still tumbling, then the
@@ -491,6 +532,91 @@ final class BowlingSceneController: NSObject {
 
   private func standingPinCount() -> Int {
     pinNodes.filter { $0.presentation.position.y >= pinFallenY }.count
+  }
+
+  // MARK: Turkey VFX
+
+  /// Drops `physicsWorld.speed` to 0.4 for a brief beat to make the
+  /// chain reaction read more dramatically. Restored to 1.0 by a
+  /// background task; cancelled if a new roll starts before the burst
+  /// completes so we never start a roll under slow-mo.
+  fileprivate func triggerSlowMo() {
+    slowMoTask?.cancel()
+    scene.physicsWorld.speed = 0.4
+    slowMoTask = Task { @MainActor [weak self] in
+      try? await Task.sleep(nanoseconds: 700_000_000)
+      guard !Task.isCancelled, let self else { return }
+      self.scene.physicsWorld.speed = 1.0
+    }
+  }
+
+  /// Pops a single-shot particle burst above the pin deck in the
+  /// theme's accent colour. Self-removes after `duration`. Called on
+  /// every turkey strike (3rd consecutive strike or any strike while
+  /// already on fire) — gated by the lastOutcome subscription, NOT by
+  /// the per-roll first-contact latch.
+  fileprivate func triggerFireworks() {
+    let particles = SCNParticleSystem()
+    particles.particleColor = theme.accentParticleColor
+    particles.particleColorVariation = SCNVector4(0.1, 0.1, 0.1, 0)
+    particles.particleSize = 0.06
+    particles.particleSizeVariation = 0.04
+    particles.birthRate = 1200
+    particles.particleLifeSpan = 0.9
+    particles.particleLifeSpanVariation = 0.4
+    particles.particleVelocity = 7
+    particles.particleVelocityVariation = 5
+    particles.spreadingAngle = 180
+    particles.acceleration = SCNVector3(0, -3.5, 0)
+    particles.emissionDuration = 0.35
+    particles.loops = false
+    particles.blendMode = .additive
+
+    let host = SCNNode()
+    host.position = SCNVector3(0, 1.4, -laneLength / 2 + 0.5)
+    host.addParticleSystem(particles)
+    scene.rootNode.addChildNode(host)
+
+    // Auto-clean: wait for emission + lifespan + buffer, then yank.
+    Task { @MainActor [weak host] in
+      try? await Task.sleep(nanoseconds: 1_600_000_000)
+      host?.removeFromParentNode()
+    }
+  }
+}
+
+// MARK: - Contact delegate
+
+extension BowlingSceneController: SCNPhysicsContactDelegate {
+  /// Fires from the SceneKit render thread on every ball-vs-pin
+  /// contact. We bridge to MainActor for the trigger work (game
+  /// state + scene mutation) and only act on the FIRST contact of
+  /// the roll so chain reactions don't spam slow-mo.
+  nonisolated func physicsWorld(_ world: SCNPhysicsWorld, didBegin contact: SCNPhysicsContact) {
+    let bitA = contact.nodeA.physicsBody?.categoryBitMask ?? 0
+    let bitB = contact.nodeB.physicsBody?.categoryBitMask ?? 0
+    let pair = bitA | bitB
+    let expected = Self.ballCategory | Self.pinCategory
+    guard pair == expected else { return }
+    Task { @MainActor [weak self] in
+      self?.handleFirstBallPinContact()
+    }
+  }
+
+  /// Called on MainActor for ball-vs-pin contacts. The latch ensures
+  /// only the FIRST one this roll runs the celebration logic. The
+  /// slow-mo trigger fires when `consecutiveStrikes >= 2` because a
+  /// strike on the upcoming impact would push the player to ≥3 (a
+  /// turkey) — small false-positive rate (player rolls a non-strike
+  /// after 2 strikes) is acceptable; the slow-mo just frames the
+  /// stakes of the roll.
+  fileprivate func handleFirstBallPinContact() {
+    guard firstContactPending else { return }
+    firstContactPending = false
+    guard let game else { return }
+    if game.consecutiveStrikes >= 2 {
+      triggerSlowMo()
+    }
   }
 }
 
