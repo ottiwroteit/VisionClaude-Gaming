@@ -1,18 +1,22 @@
 import SceneKit
 import UIKit
 
-/// Per-venue appearance overrides for the SceneKit boxing scene. Same
-/// structure as the bowling/archery themes — colours that the controller
-/// re-binds onto the bag, chains, lighting, and fog when the venue
-/// changes.
+/// Per-venue appearance overrides for the SceneKit boxing scene. The
+/// scene is first-person — the player faces a 3D boxer opponent and
+/// can see their own gloves at the bottom of the frame — so the theme
+/// drives the opponent's body, trunks, gloves, and the player's own
+/// gloves, plus the lighting that sells the venue.
 struct BoxingSceneTheme {
-  /// Main bag body colour.
-  let bagColor: UIColor
-  /// Accent stripe / branding colour wrapped around the bag mid-section.
-  let bagAccentColor: UIColor
-  /// Hanging chain / strap colour above the bag.
-  let chainColor: UIColor
-  /// Floor / mat colour beneath the bag.
+  /// Opponent's torso/body colour.
+  let bodyColor: UIColor
+  /// Opponent's trunks colour (the wider band around the hips).
+  let trunksColor: UIColor
+  /// Opponent's boxing-glove colour.
+  let opponentGloveColor: UIColor
+  /// Player's own (first-person) glove colour, visible at the bottom
+  /// of the frame.
+  let playerGloveColor: UIColor
+  /// Floor / mat colour beneath the action.
   let floorColor: UIColor
   /// Tint of the directional key light.
   let keyLightColor: UIColor
@@ -35,9 +39,10 @@ struct BoxingSceneTheme {
 
 extension BoxingSceneTheme {
   static let backAlley = BoxingSceneTheme(
-    bagColor: UIColor(red: 0.55, green: 0.30, blue: 0.20, alpha: 1),
-    bagAccentColor: UIColor(red: 0.85, green: 0.30, blue: 0.20, alpha: 1),
-    chainColor: UIColor(red: 0.40, green: 0.40, blue: 0.42, alpha: 1),
+    bodyColor: UIColor(red: 0.78, green: 0.55, blue: 0.40, alpha: 1),
+    trunksColor: UIColor(red: 0.30, green: 0.18, blue: 0.12, alpha: 1),
+    opponentGloveColor: UIColor(red: 0.80, green: 0.20, blue: 0.18, alpha: 1),
+    playerGloveColor: UIColor(red: 0.20, green: 0.30, blue: 0.95, alpha: 1),
     floorColor: UIColor(red: 0.18, green: 0.16, blue: 0.14, alpha: 1),
     keyLightColor: UIColor(red: 1.00, green: 0.85, blue: 0.55, alpha: 1),
     ambientColor: UIColor(red: 0.30, green: 0.22, blue: 0.18, alpha: 1),
@@ -47,9 +52,10 @@ extension BoxingSceneTheme {
   )
 
   static let underground = BoxingSceneTheme(
-    bagColor: UIColor(red: 0.35, green: 0.10, blue: 0.10, alpha: 1),
-    bagAccentColor: UIColor(red: 1.00, green: 0.20, blue: 0.20, alpha: 1),
-    chainColor: UIColor(red: 0.30, green: 0.30, blue: 0.32, alpha: 1),
+    bodyColor: UIColor(red: 0.62, green: 0.45, blue: 0.32, alpha: 1),
+    trunksColor: UIColor(red: 0.45, green: 0.05, blue: 0.10, alpha: 1),
+    opponentGloveColor: UIColor(red: 1.00, green: 0.20, blue: 0.20, alpha: 1),
+    playerGloveColor: UIColor(red: 0.95, green: 0.95, blue: 0.95, alpha: 1),
     floorColor: UIColor(red: 0.10, green: 0.08, blue: 0.10, alpha: 1),
     keyLightColor: UIColor(red: 1.00, green: 0.30, blue: 0.30, alpha: 1),
     ambientColor: UIColor(red: 0.25, green: 0.10, blue: 0.15, alpha: 1),
@@ -59,10 +65,11 @@ extension BoxingSceneTheme {
   )
 
   static let titleFight = BoxingSceneTheme(
-    bagColor: UIColor(red: 0.10, green: 0.10, blue: 0.18, alpha: 1),
-    bagAccentColor: UIColor(red: 1.00, green: 0.85, blue: 0.30, alpha: 1),
-    chainColor: UIColor(red: 0.85, green: 0.85, blue: 0.88, alpha: 1),
-    floorColor: UIColor(red: 0.20, green: 0.18, blue: 0.30, alpha: 1),
+    bodyColor: UIColor(red: 0.70, green: 0.50, blue: 0.38, alpha: 1),
+    trunksColor: UIColor(red: 0.10, green: 0.10, blue: 0.18, alpha: 1),
+    opponentGloveColor: UIColor(red: 1.00, green: 0.85, blue: 0.30, alpha: 1),
+    playerGloveColor: UIColor(red: 0.20, green: 0.30, blue: 0.95, alpha: 1),
+    floorColor: UIColor(red: 0.22, green: 0.20, blue: 0.32, alpha: 1),
     keyLightColor: UIColor(red: 1.00, green: 0.95, blue: 0.85, alpha: 1),
     ambientColor: UIColor(red: 0.45, green: 0.40, blue: 0.55, alpha: 1),
     fogColor: UIColor(red: 0.10, green: 0.08, blue: 0.18, alpha: 1),
