@@ -411,6 +411,13 @@ private struct BowlingArt: View {
             laneHeight: geo.size.height
           )
 
+          // Arcade 3-2-1 countdown overlay before each turn.
+          if let n = game.countdownValue {
+            BowlingCountdown(value: n, tint: tint)
+              .frame(width: geo.size.width, height: geo.size.height)
+              .allowsHitTesting(false)
+          }
+
           // Ball — visible only while rolling/knocking, animates from
           // bottom (player) to top (pins). On a gutter ball it curves
           // toward the appropriate side instead of going straight.
@@ -441,7 +448,7 @@ private struct BowlingArt: View {
         withAnimation(.easeIn(duration: 1.5)) {
           ballRollProgress = 0
         }
-      case .knocking, .resetting, .idle, .finalScoring:
+      case .knocking, .resetting, .idle, .countingDown, .finalScoring:
         // No ball animation — view either holds at pins (knocking) or
         // hides the ball entirely (idle/resetting/finalScoring).
         break
@@ -460,6 +467,7 @@ private struct BowlingArt: View {
 
   private var phaseHint: String {
     switch game.phase {
+    case .countingDown: return "Get ready…"
     case .idle:
       return game.lastRoll > 0 ? "Last roll: \(game.lastRoll)" : "Ready"
     case .rolling: return "Rolling…"
@@ -660,6 +668,51 @@ private struct BowlingBallView: View {
   }
 }
 
+// MARK: - Bowling arcade countdown
+// Big bold "3 / 2 / 1" overlay before each turn. Each digit scales in
+// with a quick spring and fades as it leaves so the next number can
+// pop in cleanly.
+
+private struct BowlingCountdown: View {
+  let value: Int
+  let tint: Color
+
+  @State private var scale: CGFloat = 0.4
+  @State private var opacity: Double = 0
+
+  var body: some View {
+    ZStack {
+      Color.black.opacity(0.35).blendMode(.multiply)
+      Text("\(value)")
+        .font(.system(size: 140, weight: .black, design: .rounded))
+        .foregroundColor(tint)
+        .shadow(color: .black.opacity(0.6), radius: 0, x: 4, y: 4)
+        .scaleEffect(scale)
+        .opacity(opacity)
+        .id(value)  // force re-render so each new digit replays the spring
+    }
+    .onAppear { animateIn() }
+    .onChange(of: value) { _, _ in
+      // Reset and re-animate for the next digit.
+      scale = 0.4
+      opacity = 0
+      animateIn()
+    }
+  }
+
+  private func animateIn() {
+    withAnimation(.spring(response: 0.35, dampingFraction: 0.55)) {
+      scale = 1.0
+      opacity = 1.0
+    }
+    // Fade slightly toward the end of the digit's lifetime so the
+    // hand-off into the next digit feels intentional.
+    withAnimation(.easeOut(duration: 0.25).delay(0.4)) {
+      opacity = 0.7
+    }
+  }
+}
+
 // MARK: - Bowling pinspotter mechanism
 // Mimics the QubicaAMF-style pinsetter: an overhead rack descends to
 // pick up standing pins, a sweep bar drops down and pushes fallen pins
@@ -747,7 +800,7 @@ private struct BowlingPinSpotter: View {
         try? await Task.sleep(nanoseconds: 150_000_000)
         withAnimation(.easeOut(duration: 0.35)) { rackDown = 0 }
       }
-    case .idle, .rolling, .finalScoring:
+    case .idle, .rolling, .countingDown, .finalScoring:
       // Make sure the mechanism is parked when we go back to play.
       withAnimation(.easeOut(duration: 0.2)) {
         rackDown = 0

@@ -6,6 +6,7 @@ final class BowlingGame: ObservableObject, Game {
   /// to know when to animate the ball, when to fall pins, and whether to
   /// accept further input.
   enum RollPhase: Equatable {
+    case countingDown  // arcade 3-2-1 before each turn — input ignored
     case idle  // ready for a flick
     case rolling  // ball traveling toward pins (~1.5s)
     case knocking  // pins falling (~0.8s)
@@ -48,6 +49,9 @@ final class BowlingGame: ObservableObject, Game {
   /// Set when the player tilted their head left or right on the flick.
   /// Drives the ball-curve animation; cleared when phase returns to idle.
   @Published private(set) var gutter: GutterSide? = nil
+  /// Current value of the 3-2-1 arcade countdown ("Go!" when 0). nil
+  /// when not counting down. The view animates a big number overlay.
+  @Published private(set) var countdownValue: Int? = nil
   @Published private(set) var statusLine: String = "Frame 1 · Ready to bowl"
   @Published private(set) var isFinished: Bool = false
   var activeModifier: VenueModifier = .default
@@ -182,11 +186,12 @@ final class BowlingGame: ObservableObject, Game {
     pinsRemaining = 10
     lastRoll = 0
     rollNumber = 0
-    phase = .idle
     gutter = nil
     rollHistory.removeAll()
     isFinished = false
-    statusLine = "Frame 1 · Flick chin up to bowl"
+    statusLine = "Frame 1 · get ready…"
+    countdownValue = nil
+    startCountdown()
   }
 
   func handle(_ event: GestureEvent) {
@@ -299,7 +304,7 @@ final class BowlingGame: ObservableObject, Game {
       ballInFrame = 2
       statusLine = "\(pinsRemaining) left · flick for ball 2"
       gutter = nil
-      phase = .idle
+      startCountdown()
     }
   }
 
@@ -357,7 +362,7 @@ final class BowlingGame: ObservableObject, Game {
       self.pinsRemaining = 10
       self.statusLine = "Frame \(self.frame) · flick chin up to bowl"
       self.gutter = nil
-      self.phase = .idle
+      self.startCountdown()
     }
   }
 
@@ -369,14 +374,31 @@ final class BowlingGame: ObservableObject, Game {
       self.ballInFrame = ball
       self.statusLine = "\(label)"
       self.gutter = nil
-      self.phase = .idle
+      self.startCountdown()
     }
   }
 
   private func endGame() {
     isFinished = true
     statusLine = "Game over · final score \(score)"
+    countdownValue = nil
     phase = .finalScoring
+  }
+
+  /// 3-2-1 arcade countdown gating each turn. Phase stays `.countingDown`
+  /// until the count finishes, so handle() can't accept flicks during it.
+  private func startCountdown() {
+    phase = .countingDown
+    countdownValue = 3
+    Task { @MainActor in
+      try? await Task.sleep(nanoseconds: nanos(0.6))
+      self.countdownValue = 2
+      try? await Task.sleep(nanoseconds: nanos(0.6))
+      self.countdownValue = 1
+      try? await Task.sleep(nanoseconds: nanos(0.6))
+      self.countdownValue = nil
+      self.phase = .idle
+    }
   }
 
   // MARK: - Real bowling scoring (strike + spare bonuses)
