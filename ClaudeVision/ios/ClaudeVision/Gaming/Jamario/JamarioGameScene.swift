@@ -51,25 +51,33 @@ final class JamarioGameScene: SKScene, SKPhysicsContactDelegate {
   private let worldLayer = SKNode()
   private let cameraNode = SKCameraNode()
 
-  // MARK: Sprite atlas
+  // MARK: Sprite textures
+  // Loaded directly from top-level imagesets in Assets.xcassets via
+  // UIImage(named:) — bulletproof asset-catalog lookup. The previous
+  // .spriteatlas approach was silently returning empty textures
+  // because of a `provides-namespace` interaction with SKTextureAtlas.
 
-  /// Loaded once at scene init from `Assets.xcassets/Jamario.spriteatlas`.
-  /// Holds idle/run/jump player textures, enemy walk frames, and the
-  /// coin/money-bag texture.
-  private let atlas = SKTextureAtlas(named: "Jamario")
-  private lazy var playerIdleTexture: SKTexture = atlas.textureNamed("jamario_idle")
-  private lazy var playerJumpTexture: SKTexture = atlas.textureNamed("jamario_jump")
+  private static func loadTexture(_ name: String) -> SKTexture {
+    guard let img = UIImage(named: name) else {
+      print("[Jamario] missing asset-catalog image: \(name)")
+      return SKTexture()
+    }
+    return SKTexture(image: img)
+  }
+
+  private lazy var playerIdleTexture: SKTexture = Self.loadTexture("jamario_idle")
+  private lazy var playerJumpTexture: SKTexture = Self.loadTexture("jamario_jump")
   private lazy var playerRunTextures: [SKTexture] = [
-    atlas.textureNamed("jamario_run_1"),
-    atlas.textureNamed("jamario_run_2"),
-    atlas.textureNamed("jamario_run_3"),
+    Self.loadTexture("jamario_run_1"),
+    Self.loadTexture("jamario_run_2"),
+    Self.loadTexture("jamario_run_3"),
   ]
   private lazy var enemyWalkTextures: [SKTexture] = [
-    atlas.textureNamed("enemy_walk_1"),
-    atlas.textureNamed("enemy_walk_2"),
+    Self.loadTexture("jamario_enemy_walk_1"),
+    Self.loadTexture("jamario_enemy_walk_2"),
   ]
-  private lazy var enemyIdleTexture: SKTexture = atlas.textureNamed("enemy_idle")
-  private lazy var coinTexture: SKTexture = atlas.textureNamed("coin")
+  private lazy var enemyIdleTexture: SKTexture = Self.loadTexture("jamario_enemy_idle")
+  private lazy var coinTexture: SKTexture = Self.loadTexture("jamario_coin")
 
   // MARK: Player + state
 
