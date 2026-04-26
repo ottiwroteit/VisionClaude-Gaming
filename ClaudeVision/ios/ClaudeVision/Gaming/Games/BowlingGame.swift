@@ -22,7 +22,7 @@ final class BowlingGame: ObservableObject, Game {
   let id = "bowling"
   let title = "Meta Bowling"
   let howToPlay =
-    "Chin UP for a straight roll. Tilt LEFT or RIGHT and your ball goes in the gutter."
+    "Tilt your head LEFT or RIGHT to aim. When you've lined up the shot, chin UP (or DOWN) to release the ball."
   let tint: GameTint = .accent
 
   /// Bowling should feel gentle on the neck — drop the activeThreshold
@@ -46,12 +46,19 @@ final class BowlingGame: ObservableObject, Game {
   /// a "fired this many times" counter.
   @Published private(set) var rollNumber: Int = 0
   @Published private(set) var phase: RollPhase = .idle
-  /// Set when the player tilted their head left or right on the flick.
+  /// Set when the released roll heads into a gutter (extreme aim).
   /// Drives the ball-curve animation; cleared when phase returns to idle.
   @Published private(set) var gutter: GutterSide? = nil
   /// Current value of the 3-2-1 arcade countdown ("Go!" when 0). nil
   /// when not counting down. The view animates a big number overlay.
   @Published private(set) var countdownValue: Int? = nil
+  /// Where the ball is aimed on the lane: -1 = full left gutter, 0 = center,
+  /// +1 = full right gutter. Updated by head-tilt LEFT/RIGHT during .idle;
+  /// committed when the player chin-flicks UP/DOWN to roll. Reset between
+  /// throws.
+  @Published private(set) var aimPosition: Float = 0
+  /// Each LEFT/RIGHT tilt nudges aim by this fraction of [-1, +1].
+  private let aimStep: Float = 0.25
   @Published private(set) var statusLine: String = "Frame 1 · Ready to bowl"
   @Published private(set) var isFinished: Bool = false
   var activeModifier: VenueModifier = .default
@@ -187,6 +194,7 @@ final class BowlingGame: ObservableObject, Game {
     lastRoll = 0
     rollNumber = 0
     gutter = nil
+    aimPosition = 0
     rollHistory.removeAll()
     isFinished = false
     statusLine = "Frame 1 · get ready…"
@@ -202,22 +210,39 @@ final class BowlingGame: ObservableObject, Game {
     guard phase == .idle else { return }
     guard event.kind == .flick else { return }
 
-    // Direction encodes intent: chin UP rolls straight, head tilt LEFT
-    // or RIGHT puts the ball in the corresponding gutter (zero pins).
-    let pendingKnock: Int
-    let gutterSide: GutterSide?
+    // Aim with horizontal head tilts; commit the roll with chin UP/DOWN.
     switch event.direction {
-    case .up:
-      pendingKnock = pinsKnocked(power: event.magnitude, remaining: pinsRemaining)
-      gutterSide = nil
     case .left:
-      pendingKnock = 0
-      gutterSide = .left
+      aimPosition = max(-1, aimPosition - aimStep)
+      statusLine = aimLineLabel()
+      return
     case .right:
-      pendingKnock = 0
-      gutterSide = .right
+      aimPosition = min(1, aimPosition + aimStep)
+      statusLine = aimLineLabel()
+      return
+    case .up, .down:
+      releaseRoll(power: event.magnitude)
     default:
-      return  // ignore .down and any other direction
+      return
+    }
+  }
+
+  /// Commits the current aim into a real ball release.
+  private func releaseRoll(power: Float) {
+    // Extreme aim sends the ball into the gutter; otherwise the lateral
+    // accuracy taxes the pin count so a perfectly centered shot scores
+    // best and progressively worse aim knocks fewer pins.
+    let absAim = abs(aimPosition)
+    let gutterSide: GutterSide?
+    let pendingKnock: Int
+    if absAim > 0.7 {
+      pendingKnock = 0
+      gutterSide = aimPosition < 0 ? .left : .right
+    } else {
+      let aimAccuracy = max(0, 1 - absAim / 0.7)  // 1 = bullseye, 0 = at gutter edge
+      let effectivePower = power * (0.5 + 0.5 * aimAccuracy)
+      pendingKnock = pinsKnocked(power: effectivePower, remaining: pinsRemaining)
+      gutterSide = nil
     }
 
     gutter = gutterSide
@@ -230,6 +255,12 @@ final class BowlingGame: ObservableObject, Game {
       try? await Task.sleep(nanoseconds: nanos(rollDuration))
       self.applyImpact(knocked: pendingKnock)
     }
+  }
+
+  private func aimLineLabel() -> String {
+    let pct = Int((aimPosition * 100).rounded())
+    if pct == 0 { return "Aim: center" }
+    return pct < 0 ? "Aim: \(abs(pct))% left" : "Aim: \(pct)% right"
   }
 
   // MARK: - Impact
@@ -387,8 +418,11 @@ final class BowlingGame: ObservableObject, Game {
 
   /// 3-2-1 arcade countdown gating each turn. Phase stays `.countingDown`
   /// until the count finishes, so handle() can't accept flicks during it.
+  /// Aim resets to center as part of the countdown — every turn starts
+  /// aimed straight down the middle.
   private func startCountdown() {
     phase = .countingDown
+    aimPosition = 0
     countdownValue = 3
     Task { @MainActor in
       try? await Task.sleep(nanoseconds: nanos(0.6))
@@ -398,6 +432,7 @@ final class BowlingGame: ObservableObject, Game {
       try? await Task.sleep(nanoseconds: nanos(0.6))
       self.countdownValue = nil
       self.phase = .idle
+      self.statusLine = "Tilt LEFT/RIGHT to aim · chin UP to roll"
     }
   }
 

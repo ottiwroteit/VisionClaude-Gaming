@@ -411,6 +411,18 @@ private struct BowlingArt: View {
             laneHeight: geo.size.height
           )
 
+          // Aim guide — visible only while the player is lining up the
+          // shot (phase == .idle). A faint dotted line plus a marker
+          // shows where the ball is currently aimed.
+          if game.phase == .idle {
+            BowlingAimGuide(
+              aim: game.aimPosition,
+              tint: tint,
+              laneWidth: geo.size.width,
+              laneHeight: geo.size.height
+            )
+          }
+
           // Arcade 3-2-1 countdown overlay before each turn.
           if let n = game.countdownValue {
             BowlingCountdown(value: n, tint: tint)
@@ -537,12 +549,13 @@ private struct BowlingArt: View {
     let h = geo.size.height
     let centerX = w / 2
 
-    // X drifts toward the gutter on a tilted flick. Quadratic in `t` so
-    // the ball starts straight and increasingly veers as it travels.
-    var x = centerX
+    // The ball travels in a straight line along the aim vector — aim of
+    // 0 = down the middle, ±1 ≈ deep gutter. If the model flagged this
+    // roll as a gutter ball we still use a quadratic curve so it visually
+    // sweeps into the gutter rather than landing flat.
+    let aim = CGFloat(game.aimPosition)
+    var x = centerX + aim * (w * 0.42) * CGFloat(1 - progress)
     if let gutter = game.gutter {
-      // 1 = at player end, 0 = at pins. We want straight at start, max
-      // drift at end.
       let t = 1 - progress
       let curve = t * t
       let gutterX: CGFloat = (gutter == .left) ? w * 0.08 : w * 0.92
@@ -665,6 +678,65 @@ private struct BowlingBallView: View {
     }
     .frame(width: size, height: size)
     .overlay(Circle().stroke(Color.black.opacity(0.45), lineWidth: 1))
+  }
+}
+
+// MARK: - Bowling aim guide
+// Shown during the .idle phase so the player can see where the ball
+// will travel before they release. A vertical dotted line plus a
+// triangular marker at the player end, both shifted left/right by aim.
+
+private struct BowlingAimGuide: View {
+  let aim: Float
+  let tint: Color
+  let laneWidth: CGFloat
+  let laneHeight: CGFloat
+
+  var body: some View {
+    let centerX = laneWidth / 2
+    let aimOffset = CGFloat(aim) * laneWidth * 0.42
+    let bottomX = centerX  // marker stays roughly at lane center horizontally
+    let topX = centerX + aimOffset  // line tilts toward the aim point at far end
+    let bottomY = laneHeight * 0.85
+    let topY = laneHeight * 0.18
+
+    ZStack {
+      // Dotted projection line from the release point to the aim target.
+      Path { p in
+        p.move(to: CGPoint(x: bottomX, y: bottomY))
+        p.addLine(to: CGPoint(x: topX, y: topY))
+      }
+      .stroke(
+        tint.opacity(0.65),
+        style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: [3, 5])
+      )
+
+      // Triangular marker at the player end, oriented up the lane.
+      Triangle()
+        .fill(tint)
+        .frame(width: 18, height: 14)
+        .overlay(Triangle().stroke(Color.black.opacity(0.6), lineWidth: 1))
+        .position(x: bottomX, y: bottomY + 4)
+
+      // Small dot at the projected target.
+      Circle()
+        .fill(tint.opacity(0.8))
+        .frame(width: 10, height: 10)
+        .overlay(Circle().stroke(Color.black.opacity(0.5), lineWidth: 1))
+        .position(x: topX, y: topY)
+    }
+    .animation(.easeOut(duration: 0.18), value: aim)
+  }
+}
+
+private struct Triangle: Shape {
+  func path(in rect: CGRect) -> Path {
+    var p = Path()
+    p.move(to: CGPoint(x: rect.midX, y: rect.minY))
+    p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+    p.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+    p.closeSubpath()
+    return p
   }
 }
 
