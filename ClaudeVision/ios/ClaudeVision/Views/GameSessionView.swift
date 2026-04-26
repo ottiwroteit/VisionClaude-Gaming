@@ -448,6 +448,10 @@ struct GameSessionView: View {
       if let g = game as? JamarioGame {
         JamarioScene(game: g, venueID: progress.currentVenue(for: g.id).id)
       }
+    case "jamariostreets":
+      if let g = game as? JamarioStreetsGame {
+        JamarioStreetsScene(game: g, venueID: progress.currentVenue(for: g.id).id)
+      }
     default: GenericArt(game: game)
     }
   }
