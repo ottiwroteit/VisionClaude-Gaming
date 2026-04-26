@@ -105,6 +105,7 @@ struct ContentView: View {
     coordinator.register(BoxingGame())
     coordinator.register(ArcheryGame())
     coordinator.register(FruitSlashGame())
+    coordinator.register(JamarioGame())
     coordinator.attach(frames: rayBan.$latestImage)
   }
 }
