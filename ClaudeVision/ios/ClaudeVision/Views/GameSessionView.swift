@@ -22,11 +22,10 @@ struct GameSessionView: View {
   /// Once you tap the X you don't see the how-to-play hint again this
   /// session.
   @State private var dismissedCoaching: Set<String> = []
-  /// Per-aim-window state for the bowling ball picker. The user can
-  /// swipe the picker off-screen left or right after choosing a ball;
-  /// it stays dismissed until the next `.idle` phase begins.
+  /// Per-aim-window state for the bowling ball picker. After the
+  /// player taps the X on the picker card, it stays hidden until the
+  /// next `.idle` phase begins (next ball / next frame).
   @State private var bowlingPickerDismissed: Bool = false
-  @State private var bowlingPickerDragOffset: CGFloat = 0
 
   var body: some View {
     guard let game = activeGame else {
@@ -128,7 +127,6 @@ struct GameSessionView: View {
         // gets a fresh choice for each ball.
         if newPhase == .idle {
           bowlingPickerDismissed = false
-          bowlingPickerDragOffset = 0
         }
       }
       .sheet(isPresented: $showShareSheet) {
@@ -169,35 +167,31 @@ struct GameSessionView: View {
     (game as? BowlingGame)?.frameDisplays ?? []
   }
 
-  /// Wraps the BowlingBallPicker with a horizontal-drag-to-dismiss
-  /// gesture. The user can swipe the picker off either side of the
-  /// screen after they've chosen a ball; it auto-comes-back on the
-  /// next aim window via the `.onChange(of: phase)` reset on the body.
+  /// Wraps the BowlingBallPicker with a top-trailing close button. A
+  /// horizontal swipe-to-dismiss conflicted with the picker's internal
+  /// horizontal scroll so we use an explicit X tap instead — picker
+  /// auto-comes-back on the next aim window via the `.onChange(of:
+  /// phase)` reset on the body.
   private func bowlingBallPickerSection(for game: BowlingGame) -> some View {
-    let dismissDistance: CGFloat = 80
-    return BowlingBallPicker(game: game, tint: tint(for: game))
-      .offset(x: bowlingPickerDragOffset)
-      .gesture(
-        DragGesture(minimumDistance: 16)
-          .onChanged { value in
-            // Only treat predominantly-horizontal drags as dismiss intent.
-            if abs(value.translation.width) > abs(value.translation.height) {
-              bowlingPickerDragOffset = value.translation.width
-            }
+    BowlingBallPicker(game: game, tint: tint(for: game))
+      .overlay(alignment: .topTrailing) {
+        Button {
+          withAnimation(.easeOut(duration: 0.18)) {
+            bowlingPickerDismissed = true
           }
-          .onEnded { value in
-            if abs(value.translation.width) > dismissDistance {
-              withAnimation(.easeOut(duration: 0.22)) {
-                bowlingPickerDragOffset = value.translation.width > 0 ? 900 : -900
-                bowlingPickerDismissed = true
-              }
-            } else {
-              withAnimation(.spring(response: 0.32, dampingFraction: 0.8)) {
-                bowlingPickerDragOffset = 0
-              }
-            }
-          }
-      )
+        } label: {
+          Image(systemName: "xmark")
+            .font(.system(size: 11, weight: .black))
+            .foregroundColor(.white)
+            .padding(6)
+            .background(Color.black.opacity(0.55))
+            .clipShape(Circle())
+            .overlay(Circle().stroke(tint(for: game), lineWidth: 1.5))
+            .padding(6)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Hide ball picker")
+      }
       .transition(.opacity)
   }
 
@@ -658,9 +652,6 @@ private struct BowlingArt: View {
     switch game.phase {
     case .countingDown: return "Get ready…"
     case .idle:
-      if let remaining = game.aimTimeRemaining {
-        return "Aim · \(Int(remaining.rounded(.up)))s"
-      }
       return game.lastRoll > 0 ? "Last roll: \(game.lastRoll)" : "Ready"
     case .rolling: return "Rolling…"
     case .knocking: return "Pins falling…"

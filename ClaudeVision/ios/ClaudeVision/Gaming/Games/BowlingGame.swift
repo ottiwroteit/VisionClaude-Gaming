@@ -56,11 +56,6 @@ final class BowlingGame: ObservableObject, Game {
   /// +1 = full right gutter. Tracks live head position during the aim
   /// window and is committed when the player chin-flicks UP/DOWN.
   @Published private(set) var aimPosition: Float = 0
-  /// Seconds remaining on the aim window. nil means the player is NOT in
-  /// the aim window (countdown phase, mid-roll, etc.). Counts down from
-  /// `aimWindowDuration` to zero; on zero we auto-release whatever aim
-  /// the player landed on.
-  @Published private(set) var aimTimeRemaining: TimeInterval? = nil
   /// Released ball intent — read by the SceneKit scene the moment phase
   /// flips to `.rolling`. Power 0..1 maps to the forward impulse; hook
   /// -1..+1 maps to lateral angular velocity (curve).
@@ -71,17 +66,11 @@ final class BowlingGame: ObservableObject, Game {
   /// twice would mean a duplicate launch, which would be a bug.
   @Published private(set) var rollLaunchedAt: Date? = nil
 
-  /// How long the player has to line up the shot once the countdown
-  /// finishes. Picked to match arcade-style time pressure.
-  private let aimWindowDuration: TimeInterval = 10.0
   /// Sensitivity for integrating live head motion into aim. Tuned by
   /// feel — too low = no movement, too high = jumpy.
   private let aimSensitivity: Float = 0.12
   /// Deadzone below which live motion is ignored as noise.
   private let aimDeadzone: Float = 0.08
-  /// The Task running the aim-window countdown — cancelled when the
-  /// player commits early so we don't double-fire.
-  private var aimTimerTask: Task<Void, Never>? = nil
   /// Safety timer for the .rolling phase. Cancels itself the moment the
   /// scene reports a settle; if it actually fires, the roll is treated
   /// as a no-show gutter so the state machine never deadlocks.
@@ -295,11 +284,11 @@ final class BowlingGame: ObservableObject, Game {
   }
 
   /// Live head motion → aim integration. Fires at frame rate from the
-  /// engine, but only does work during the aim window so motion outside
-  /// of it (countdown, ball rolling, pin fall, reset) doesn't leak into
-  /// next turn's aim.
+  /// engine, but only does work while the player is in the `.idle`
+  /// phase (aiming) so motion outside of that window (countdown, ball
+  /// rolling, pin fall, reset) doesn't leak into next turn's aim.
   func handleMotion(_ vector: SIMD2<Float>) {
-    guard aimTimeRemaining != nil, phase == .idle else { return }
+    guard phase == .idle else { return }
     let lateral = vector.x
     guard abs(lateral) > aimDeadzone else { return }
     aimPosition = max(-1, min(1, aimPosition + lateral * aimSensitivity))
@@ -317,10 +306,6 @@ final class BowlingGame: ObservableObject, Game {
   /// fails to report back within `physicsTimeout` (e.g. the SceneKit
   /// view never mounted), so the game can never get stuck in `.rolling`.
   private func releaseRoll(power: Float, hook: Float = 0) {
-    // Cancel the aim-window timer — we're rolling now.
-    aimTimerTask?.cancel()
-    aimTimerTask = nil
-    aimTimeRemaining = nil
     physicsWatchdogTask?.cancel()
 
     let absAim = abs(aimPosition)
@@ -554,16 +539,15 @@ final class BowlingGame: ObservableObject, Game {
   }
 
   /// 3-2-1 arcade countdown gating each turn. Phase stays `.countingDown`
-  /// until the count finishes, so handle() can't accept flicks during it.
-  /// Aim resets to center as part of the countdown — every turn starts
-  /// aimed straight down the middle. The 10-second aim window starts
-  /// the instant the countdown ends.
+  /// until the count finishes, so handle() can't accept flicks during
+  /// it. Aim resets to center as part of the countdown — every turn
+  /// starts aimed straight down the middle. Once the countdown ends,
+  /// phase enters `.idle` and stays there indefinitely until the player
+  /// commits with a chin-flick UP/DOWN. There is no auto-release — the
+  /// gesture is the only way the ball moves.
   private func startCountdown() {
     phase = .countingDown
     aimPosition = 0
-    aimTimeRemaining = nil
-    aimTimerTask?.cancel()
-    aimTimerTask = nil
     countdownValue = 3
     Task { @MainActor in
       try? await Task.sleep(nanoseconds: nanos(0.6))
@@ -574,29 +558,6 @@ final class BowlingGame: ObservableObject, Game {
       self.countdownValue = nil
       self.phase = .idle
       self.statusLine = "Move your head to aim · chin UP to roll"
-      self.startAimWindow()
-    }
-  }
-
-  /// Starts the 10-second aim window. Ticks down the displayed timer
-  /// once per 100ms for smooth UI; on expiry, auto-releases at whatever
-  /// aim the player landed on (with reduced power as a soft penalty).
-  private func startAimWindow() {
-    aimTimeRemaining = aimWindowDuration
-    aimTimerTask = Task { @MainActor in
-      let tick: TimeInterval = 0.1
-      while let remaining = self.aimTimeRemaining, remaining > 0, !Task.isCancelled {
-        try? await Task.sleep(nanoseconds: nanos(tick))
-        if Task.isCancelled { return }
-        let next = max(0, remaining - tick)
-        self.aimTimeRemaining = next
-        if next <= 0 {
-          // Time's up — auto-release with mid power.
-          self.aimTimerTask = nil
-          self.releaseRoll(power: 0.55)
-          return
-        }
-      }
     }
   }
 
