@@ -67,11 +67,12 @@ final class JamarioGameScene: SKScene, SKPhysicsContactDelegate {
 
   private lazy var playerIdleTexture: SKTexture = Self.loadTexture("jamario_idle")
   private lazy var playerJumpTexture: SKTexture = Self.loadTexture("jamario_jump")
-  private lazy var playerRunTextures: [SKTexture] = [
-    Self.loadTexture("jamario_run_1"),
-    Self.loadTexture("jamario_run_2"),
-    Self.loadTexture("jamario_run_3"),
-  ]
+  /// 8-frame run cycle extracted from the user-provided MP4 of
+  /// Jamario running. Animated at 0.07 s per frame for a ~2 Hz stride
+  /// cadence that matches the visible ground-scroll speed.
+  private lazy var playerRunTextures: [SKTexture] = (1...8).map {
+    Self.loadTexture("jamario_run_\($0)")
+  }
   private lazy var enemyWalkTextures: [SKTexture] = [
     Self.loadTexture("jamario_enemy_walk_1"),
     Self.loadTexture("jamario_enemy_walk_2"),
@@ -320,7 +321,7 @@ final class JamarioGameScene: SKScene, SKPhysicsContactDelegate {
     case .run:
       let cycle = SKAction.animate(
         with: playerRunTextures,
-        timePerFrame: 0.10,
+        timePerFrame: 0.07,
         resize: false,
         restore: false)
       player.run(.repeatForever(cycle), withKey: "anim")
