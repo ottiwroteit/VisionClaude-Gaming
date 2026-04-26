@@ -30,9 +30,11 @@ final class BowlingCameraTracker: NSObject, SCNSceneRendererDelegate {
   /// "trigger" for the camera to start following — keeps the camera
   /// still while the ball is launching from behind the bowler.
   let followTriggerZ: Float = 8.5
-  /// Z floor the camera will not pass — keeps it from clipping into
-  /// the pin deck on huge rolls.
-  let minCameraZ: Float = -2.0
+  /// Z floor the camera will not pass — keeps it just clear of the
+  /// pin deck (~-10) on huge rolls. Previously this was -2 which
+  /// clamped the camera halfway down the lane and made the ball
+  /// disappear into the distance long before reaching the pins.
+  let minCameraZ: Float = -8.5
 
   /// Toggled by the controller from MainActor when the game enters
   /// `.rolling`. Read on the render thread; one frame of staleness is

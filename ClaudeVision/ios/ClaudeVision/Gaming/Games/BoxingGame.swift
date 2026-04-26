@@ -17,8 +17,13 @@ final class BoxingGame: ObservableObject, Game {
   }
 
   @Published private(set) var score: Int = 0
-  @Published private(set) var playerHealth: Int = 100
-  @Published private(set) var cpuHealth: Int = 100
+  /// Both fighters get 400 HP so a typical fight (player throws ~1
+  /// hook per 1-2 s at ~25 dmg avg) lasts 30-60 s instead of ending
+  /// in the first 5-10 s. Health bars in the chrome read this against
+  /// `maxHealth` so the percentage display stays correct.
+  @Published private(set) var playerHealth: Int = 400
+  @Published private(set) var cpuHealth: Int = 400
+  let maxHealth: Int = 400
   @Published private(set) var round: Int = 1
   @Published private(set) var incomingAttack: IncomingAttack = .none
   @Published private(set) var statusLine: String = "Round 1 — defend and counter"
@@ -46,8 +51,8 @@ final class BoxingGame: ObservableObject, Game {
 
   func reset() {
     score = 0
-    playerHealth = 100
-    cpuHealth = 100
+    playerHealth = maxHealth
+    cpuHealth = maxHealth
     round = 1
     incomingAttack = .none
     isFinished = false
@@ -122,7 +127,11 @@ final class BoxingGame: ObservableObject, Game {
           Task { @MainActor [weak self] in
             guard let self, self.incomingAttack != .none, !self.isFinished else { return }
             // CPU hits harder at higher difficulty.
-            let dmg = Int(Double(12) * self.activeModifier.difficultyMultiplier)
+            // CPU damage scaled up alongside the new 400 HP pool so a
+            // missed dodge actually costs the player meaningful HP and
+            // both fighters die in roughly the same number of hits
+            // (~15-25). Keeps fights at the 30-60 s the user asked for.
+            let dmg = Int(Double(28) * self.activeModifier.difficultyMultiplier)
             self.playerHealth = max(0, self.playerHealth - dmg)
             self.statusLine = "Took the \(self.incomingAttack.rawValue) · \(self.playerHealth) HP"
             self.lastHitEventID += 1

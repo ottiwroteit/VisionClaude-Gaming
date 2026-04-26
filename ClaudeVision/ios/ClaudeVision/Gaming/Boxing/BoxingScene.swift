@@ -16,8 +16,10 @@ struct BoxingScene: View {
       BoxingSCNHost(game: game, venueID: venueID)
       VStack(spacing: 12) {
         HStack(spacing: 12) {
-          healthBar(label: "YOU", value: game.playerHealth, color: .green)
-          healthBar(label: "CPU", value: game.cpuHealth, color: tint)
+          healthBar(
+            label: "YOU", value: game.playerHealth, max: game.maxHealth, color: .green)
+          healthBar(
+            label: "CPU", value: game.cpuHealth, max: game.maxHealth, color: tint)
         }
         if game.incomingAttack != .none {
           Text("⚠ INCOMING \(game.incomingAttack.rawValue.uppercased())")
@@ -39,30 +41,36 @@ struct BoxingScene: View {
     }
   }
 
-  private func healthBar(label: String, value: Int, color: Color) -> some View {
-    VStack(alignment: .leading, spacing: 4) {
+  /// Health bar with explicit `max` so it fills correctly regardless
+  /// of the underlying HP scale. Made visually thicker (height 14)
+  /// and with a hard outline so the user actually notices the
+  /// fight's progress.
+  private func healthBar(label: String, value: Int, max maxValue: Int, color: Color) -> some View {
+    let pct = max(0, min(1, CGFloat(value) / CGFloat(max(1, maxValue))))
+    return VStack(alignment: .leading, spacing: 4) {
       HStack {
         Text(label)
-          .font(.system(size: 10, weight: .heavy)).tracking(2)
-          .foregroundColor(.white.opacity(0.85))
+          .font(.system(size: 12, weight: .heavy)).tracking(2)
+          .foregroundColor(.white)
         Spacer()
         Text("\(value)")
-          .font(.system(size: 11, weight: .black).monospaced())
-          .foregroundColor(.white.opacity(0.85))
+          .font(.system(size: 13, weight: .black).monospaced())
+          .foregroundColor(.white)
       }
       GeometryReader { proxy in
         ZStack(alignment: .leading) {
-          Capsule().fill(Color.black.opacity(0.55))
+          Capsule().fill(Color.black.opacity(0.65))
           Capsule()
             .fill(color)
-            .frame(width: proxy.size.width * CGFloat(value) / 100)
+            .frame(width: proxy.size.width * pct)
         }
+        .overlay(Capsule().stroke(Color.white.opacity(0.85), lineWidth: 1.5))
       }
-      .frame(height: 8)
+      .frame(height: 14)
     }
-    .padding(8)
-    .background(.ultraThinMaterial.opacity(0.9))
-    .clipShape(RoundedRectangle(cornerRadius: 6))
+    .padding(10)
+    .background(.ultraThinMaterial.opacity(0.95))
+    .clipShape(RoundedRectangle(cornerRadius: 8))
   }
 }
 
