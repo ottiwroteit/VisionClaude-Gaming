@@ -1,0 +1,6 @@
+{
+  "images" : [
+    { "idiom" : "universal", "filename" : "jamario_idle.png" }
+  ],
+  "info" : { "version" : 1, "author" : "xcode" }
+}

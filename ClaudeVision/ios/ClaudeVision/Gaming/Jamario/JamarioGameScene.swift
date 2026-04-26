@@ -51,9 +51,36 @@ final class JamarioGameScene: SKScene, SKPhysicsContactDelegate {
   private let worldLayer = SKNode()
   private let cameraNode = SKCameraNode()
 
+  // MARK: Sprite atlas
+
+  /// Loaded once at scene init from `Assets.xcassets/Jamario.spriteatlas`.
+  /// Holds idle/run/jump player textures, enemy walk frames, and the
+  /// coin/money-bag texture.
+  private let atlas = SKTextureAtlas(named: "Jamario")
+  private lazy var playerIdleTexture: SKTexture = atlas.textureNamed("jamario_idle")
+  private lazy var playerJumpTexture: SKTexture = atlas.textureNamed("jamario_jump")
+  private lazy var playerRunTextures: [SKTexture] = [
+    atlas.textureNamed("jamario_run_1"),
+    atlas.textureNamed("jamario_run_2"),
+    atlas.textureNamed("jamario_run_3"),
+  ]
+  private lazy var enemyWalkTextures: [SKTexture] = [
+    atlas.textureNamed("enemy_walk_1"),
+    atlas.textureNamed("enemy_walk_2"),
+  ]
+  private lazy var enemyIdleTexture: SKTexture = atlas.textureNamed("enemy_idle")
+  private lazy var coinTexture: SKTexture = atlas.textureNamed("coin")
+
   // MARK: Player + state
 
-  private var player: SKShapeNode!
+  /// Player visible sprite. Larger than the physics body for screen
+  /// presence — body stays at the gameplay-tuned 36×44.
+  private static let playerVisualSize = CGSize(width: 64, height: 80)
+  private var player: SKSpriteNode!
+  /// Last set player animation; the update loop diffs against this so
+  /// we don't restart the run cycle every frame.
+  private var playerAnim: PlayerAnim = .idle
+  private enum PlayerAnim { case idle, run, jump, dead }
   /// Number of currently-active ground contacts. >0 = grounded.
   private var groundContactCount: Int = 0
   private var isAlive: Bool = true
@@ -218,38 +245,8 @@ final class JamarioGameScene: SKScene, SKPhysicsContactDelegate {
   // MARK: Player
 
   private func spawnPlayer() {
-    let path = CGPath(
-      roundedRect: CGRect(
-        x: -playerSize.width / 2, y: -playerSize.height / 2,
-        width: playerSize.width, height: playerSize.height),
-      cornerWidth: 6, cornerHeight: 6, transform: nil)
-    player = SKShapeNode(path: path)
-    player.fillColor = theme.playerColor
-    player.strokeColor = .black
-    player.lineWidth = 1.5
-
-    // Cap stripe — a thin overlay rectangle near the top of the body.
-    let stripe = SKShapeNode(
-      rect: CGRect(
-        x: -playerSize.width / 2, y: playerSize.height / 2 - 12,
-        width: playerSize.width, height: 6))
-    stripe.fillColor = theme.playerAccentColor
-    stripe.strokeColor = .clear
-    player.addChild(stripe)
-
-    // Two simple eye dots so the player has a face.
-    let leftEye = SKShapeNode(circleOfRadius: 3)
-    leftEye.fillColor = .white
-    leftEye.strokeColor = .black
-    leftEye.lineWidth = 1
-    leftEye.position = CGPoint(x: -6, y: 4)
-    player.addChild(leftEye)
-    let rightEye = SKShapeNode(circleOfRadius: 3)
-    rightEye.fillColor = .white
-    rightEye.strokeColor = .black
-    rightEye.lineWidth = 1
-    rightEye.position = CGPoint(x: 8, y: 4)
-    player.addChild(rightEye)
+    player = SKSpriteNode(texture: playerIdleTexture)
+    player.size = Self.playerVisualSize
 
     let body = SKPhysicsBody(rectangleOf: playerSize)
     body.allowsRotation = false
@@ -285,6 +282,41 @@ final class JamarioGameScene: SKScene, SKPhysicsContactDelegate {
     guard isAlive, groundContactCount > 0, let body = player.physicsBody else { return }
     body.velocity = CGVector(dx: body.velocity.dx, dy: 0)
     body.applyImpulse(CGVector(dx: 0, dy: jumpImpulse))
+  }
+
+  /// Diff-based player animation switcher. Called every frame from
+  /// `update`; only mutates the sprite when the desired animation
+  /// state has actually changed so we don't restart the run cycle on
+  /// every tick.
+  private func updatePlayerAnimation() {
+    let desired: PlayerAnim
+    if !isAlive {
+      desired = .dead
+    } else if groundContactCount > 0 {
+      desired = .run
+    } else {
+      desired = .jump
+    }
+    setPlayerAnim(desired)
+  }
+
+  private func setPlayerAnim(_ anim: PlayerAnim) {
+    guard anim != playerAnim else { return }
+    playerAnim = anim
+    player.removeAction(forKey: "anim")
+    switch anim {
+    case .idle, .dead:
+      player.texture = playerIdleTexture
+    case .jump:
+      player.texture = playerJumpTexture
+    case .run:
+      let cycle = SKAction.animate(
+        with: playerRunTextures,
+        timePerFrame: 0.10,
+        resize: false,
+        restore: false)
+      player.run(.repeatForever(cycle), withKey: "anim")
+    }
   }
 
   // MARK: Level generation
@@ -415,31 +447,21 @@ final class JamarioGameScene: SKScene, SKPhysicsContactDelegate {
   }
 
   private func addEnemy(atX x: CGFloat, y: CGFloat) {
-    let enemySize = CGSize(width: 32, height: 28)
-    let path = CGPath(
-      roundedRect: CGRect(
-        x: -enemySize.width / 2, y: -enemySize.height / 2,
-        width: enemySize.width, height: enemySize.height),
-      cornerWidth: 10, cornerHeight: 10, transform: nil)
-    let node = SKShapeNode(path: path)
-    node.fillColor = theme.enemyColor
-    node.strokeColor = .black
-    node.lineWidth = 1
-    node.position = CGPoint(x: x, y: y)
+    // Physics body stays sized to the gameplay-tuned hitbox; the
+    // visible sprite is bigger so the sci-fi soldier reads on screen.
+    let enemyHitboxSize = CGSize(width: 32, height: 36)
+    let enemyVisualSize = CGSize(width: 56, height: 70)
+
+    let node = SKSpriteNode(texture: enemyIdleTexture)
+    node.size = enemyVisualSize
+    // Move the visual up a touch so the boots sit at the bottom of
+    // the hitbox (sprite anchor is centred; hitbox sits below the
+    // sprite's centre by a few pts to align feet with the ground).
+    node.position = CGPoint(x: x, y: y + (enemyVisualSize.height - enemyHitboxSize.height) / 2)
     node.zPosition = 5
     node.name = "enemy"
 
-    // Tiny eyes for character.
-    for ex in [-5.0, 6.0] {
-      let eye = SKShapeNode(circleOfRadius: 2.5)
-      eye.fillColor = .white
-      eye.strokeColor = .black
-      eye.lineWidth = 0.8
-      eye.position = CGPoint(x: ex, y: 3)
-      node.addChild(eye)
-    }
-
-    let body = SKPhysicsBody(rectangleOf: enemySize)
+    let body = SKPhysicsBody(rectangleOf: enemyHitboxSize)
     body.allowsRotation = false
     body.friction = 0
     body.restitution = 0
@@ -451,6 +473,16 @@ final class JamarioGameScene: SKScene, SKPhysicsContactDelegate {
     node.physicsBody = body
     // Patrol left at a slow constant speed.
     body.velocity = CGVector(dx: -60, dy: 0)
+
+    // Walking cycle alternating the two enemy walk frames. The walk
+    // sprites already face left, so no horizontal flip is needed.
+    let cycle = SKAction.animate(
+      with: enemyWalkTextures,
+      timePerFrame: 0.18,
+      resize: false,
+      restore: false)
+    node.run(.repeatForever(cycle), withKey: "walk")
+
     worldLayer.addChild(node)
   }
 
@@ -464,25 +496,23 @@ final class JamarioGameScene: SKScene, SKPhysicsContactDelegate {
   }
 
   private func addCoin(atX x: CGFloat, y: CGFloat) {
-    let coin = SKShapeNode(circleOfRadius: 9)
-    coin.fillColor = theme.coinColor
-    coin.strokeColor = UIColor.brown
-    coin.lineWidth = 1
+    let coin = SKSpriteNode(texture: coinTexture)
+    coin.size = CGSize(width: 32, height: 32)
     coin.position = CGPoint(x: x, y: y)
     coin.zPosition = 6
     coin.name = "coin"
 
-    // Subtle glint inside the disc.
-    let glint = SKShapeNode(circleOfRadius: 3)
-    glint.fillColor = theme.coinGlintColor
-    glint.strokeColor = .clear
-    glint.position = CGPoint(x: -2, y: 2)
-    coin.addChild(glint)
+    // Subtle bob — money bag floats gently up and down so it reads as
+    // a pickup, not stage decoration. Spin would look wrong on a bag.
+    let up = SKAction.moveBy(x: 0, y: 6, duration: 0.6)
+    up.timingMode = .easeInEaseOut
+    let down = SKAction.moveBy(x: 0, y: -6, duration: 0.6)
+    down.timingMode = .easeInEaseOut
+    coin.run(.repeatForever(.sequence([up, down])))
 
-    // Gentle spin to give the coin some life.
-    coin.run(.repeatForever(.rotate(byAngle: .pi * 2, duration: 1.4)))
-
-    let body = SKPhysicsBody(circleOfRadius: 9)
+    // Slightly larger pickup hitbox than the visual centre so the
+    // collect feels generous when running past at speed.
+    let body = SKPhysicsBody(circleOfRadius: 16)
     body.isDynamic = false
     body.categoryBitMask = Self.categoryCoin
     body.contactTestBitMask = Self.categoryPlayer
@@ -529,6 +559,9 @@ final class JamarioGameScene: SKScene, SKPhysicsContactDelegate {
     generateAhead()
     despawnBehindCamera()
 
+    // Sync sprite animation to grounded/airborne state.
+    updatePlayerAnimation()
+
     lastCameraX = camX
   }
 
@@ -572,6 +605,11 @@ final class JamarioGameScene: SKScene, SKPhysicsContactDelegate {
     player.position = CGPoint(x: playerScreenX, y: groundTopY + playerSize.height)
     player.physicsBody?.velocity = .zero
     groundContactCount = 0
+    // Force the animation state machine to re-evaluate from scratch
+    // on the first update tick after reset.
+    player.removeAction(forKey: "anim")
+    playerAnim = .idle
+    player.texture = playerIdleTexture
     generateOpeningRunway()
     generateAhead()
     isAlive = true
@@ -583,13 +621,10 @@ final class JamarioGameScene: SKScene, SKPhysicsContactDelegate {
     theme = newTheme
     backgroundColor = newTheme.skyBottom
     rebuildBackground()
-    // The world layer's procedural nodes keep their original colour
-    // (they were tinted at spawn time). New chunks generated after
+    // Player + enemies + coins are texture-driven now, so the venue
+    // theme only affects the procedural ground / platforms / sky /
+    // mountains — already rebuilt above. New chunks generated after
     // the theme change pick up the new palette automatically.
-    player.fillColor = newTheme.playerColor
-    if let stripe = player.children.first(where: { $0 is SKShapeNode }) as? SKShapeNode {
-      stripe.fillColor = newTheme.playerAccentColor
-    }
   }
 
   // MARK: Contact
