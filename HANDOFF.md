@@ -1,195 +1,168 @@
-# Handoff — VisionClaude Gaming · Bowling deep-dive session
+# Handoff — VisionClaude Gaming · 9-game multi-engine session
 
 **Last session ended:** 2026-04-26.
 **Branch:** `claude/meta-glasses-bowling-game-DcTR3` — never push to `main`.
 **Working tree:** `/Users/otti/Documents/GitHub/VisionClaude-Gaming` on the user's Mac.
+**Player's first name:** Jamario (note spelling — Ja-mario, not Mario). The platformer game and its player character are both named after him.
 
 ---
 
 ## TL;DR · Read this first
 
-The user is bowling-only right now. The bowling game has gone through ~25 commits this session (full-bleed lane, 3D tilt, scoreboard, pinspotter, themed venues, real-bowling scoring, aim-then-release with continuous head motion, 10-second aim window, ball picker, turkey-fire bonus, etc.). **The user does not see any of these updates because the build on their phone is stale.** Every session opens with this exact problem: source on disk is correct, Xcode is running a cached binary.
+App now ships **9 games** total. All gameplay rendering uses native Apple frameworks: SceneKit for 3D games (bowling, tennis, ping pong, boxing, archery, firefox), SpriteKit for 2D games (Jamario auto-runner, Jamario Streets brawler, AI Slasher). No SwiftUI primitives in any game scene anymore — those are all dead code in `GameSessionView.swift` waiting on a cleanup commit.
 
-**First action when a new session starts:**
+The recurring "stale build" problem still applies on every fresh session — Xcode keeps a cached binary across SDK refreshes:
 
-1. Take an Xcode screenshot. If the build status says "Build Failed" or is older than the most recent commit, the user is on a stale build.
-2. Tell the user: **Cmd + Shift + K (Clean Build Folder), then Cmd + R**. Do not proceed with feature work until they confirm a fresh build is running.
-3. The `xcodebuild` CLI is the source of truth for "does this compile" — run it before assuming an Xcode build status is accurate:
+1. Xcode screenshot. If "Build Failed" or stale timestamp → tell the user **Cmd+Shift+K** then **Cmd+R**. Do not proceed with feature work until they confirm a fresh build is running.
+2. CLI source-of-truth for "does this compile" before trusting Xcode:
    ```
    xcodebuild -project ClaudeVision.xcodeproj -scheme ClaudeVision -destination 'generic/platform=iOS' -quiet build
    ```
-   (run from `ClaudeVision/ios/`)
+   (from `ClaudeVision/ios/`)
+3. After adding new files, **xcodegen** must regenerate `.pbxproj`. If the user has Xcode open they'll get a project-changed prompt — accept the reload.
 
 ---
 
-## What the user is asking for
+## Game lineup (alphabetical-by-title in the home carousel)
 
-Reference apps (sent as YouTube Shorts in the session — I could not watch the videos, only extract titles):
-
-- **Bowling Crew** — glossy 3D mobile bowling, themed venues (skyline / Mars / etc), big animated STRIKE pop-ups, ball with light trail.
-- **Skyline Bowling** — full-bleed lane, camera follows ball, themed living-room and bridge backdrops, depth-perceived red aim laser pointing at pins.
-- **Bowling Fury / Hells Balls** — neon explosion vibe, ball goes on fire on streaks, big themed venues (Mars, Hell, Build N Roll construction site).
-- **3D Bowling / Bowling Master** — ball selection screen with themed balls (skull, 8-ball, basketball, sport patterns).
-
-The user has been screenshotting these reference images and asking us to match. We **cannot match Unity-grade 3D in SwiftUI** — be honest about this. We can fake a lot with `rotation3DEffect`, gradients, and SF Symbols, but pin physics / camera-on-rails / real lighting are not coming.
-
----
-
-## User's pet peeves and strong preferences
-
-These are non-negotiable. Re-reading these before responding will save at least one cycle of frustration.
-
-1. **"Just try it. Use computer-use. Stop asking me."** The user has Xcode at click-tier on display "LS32CG51x". They've granted access. They want me to take screenshots, click Run, read the console myself. Caveat: clicking inside the editor pane has at least once typed garbage into a file (likely macOS press-and-hold accent menu triggered by my click landing somewhere unexpected). **Click only the Run button (▶, just right of Stop ⏹) at the very top of the toolbar. Verify with `zoom` first if uncertain about coordinates.**
-2. **"One terminal command per code block."** The Bash hook actively blocks chained `git add && commit && push`. Always split.
-3. **Real bowling rules.** "Do your research." The current implementation has 10 frames, strike/spare bonus scoring, proper 10th-frame fill-ball logic. Don't simplify.
-4. **Strict roll lockout.** "I shouldn't be able to roll again until pins are reset." The state machine enforces this; the model is correct. If the user says it's broken, the running build is stale (see TL;DR).
-5. **No phallic pin shape.** The current `BowlingPinShape` uses USBC-spec proportions (small head, narrow neck, wide belly, gentle waist, small base) — do NOT regress to a simpler shape.
-6. **Glasses-only motion input.** No phone-IMU fallback. The whole app point is Ray-Ban Meta head tracking.
-7. **Smaller chrome, lane is the star.** All UI overlays should be compact and translucent. Lane fills the screen.
-8. **Themed venues, not solid colors.** Each venue is its own scene (palms, dunes, pyramids, vines, neon, blood moon). Six built for bowling.
+| Game | id | Engine | Mechanic |
+|---|---|---|---|
+| AI Slasher | `fruitslash` | SpriteKit | Head-tracked samurai sword + falling AI/LLM company logos. Real slice-in-half. Bombs ("AGI") penalize. |
+| Jamario: Streets | `jamariostreets` | SpriteKit | Side-scrolling beat-em-up. Tilt = walk, chin UP = punch, chin DOWN = kick. Wave-based. |
+| Meta Archery | `archery` | SceneKit | 3D target + nocking arrow + flight + camera follow. |
+| Meta Bowling | `bowling` | SceneKit | 3D pin physics + ball impulses + camera follow + turkey VFX. |
+| Meta Boxing | `boxing` | SceneKit | First-person POV vs. humanoid opponent. 400 HP each (recently bumped). |
+| Meta Firefox | `firefox` | SceneKit | First-person flight combat. Bank/pitch via tilt, chin UP = fire missile. |
+| Meta Jamario | `jamario` | SpriteKit | Auto-runner platformer. Chin UP = jump. 8-frame run cycle from the user's MP4. |
+| Meta Fruit Slash → AI Slasher | (renamed) | — | (see AI Slasher above) |
+| Meta Tennis | `tennis` | SceneKit | 3D court, net, ball arcs, opponent humanoid. |
+| Meta Ping Pong | `pingpong` | SceneKit | 3D table + paddles + arcing ball. |
 
 ---
 
-## SDK gotchas (MWDAT 0.6) — keep these in memory
-
-The MWDAT iOS SDK (`from: 0.5.0` resolves to 0.6.0 currently) has several non-obvious requirements. **Reading [`memory/mwdat_streaming_order.md`](file:///Users/otti/.claude/projects/-Users-otti-Documents-GitHub-VisionClaude-Gaming/memory/mwdat_streaming_order.md) at session start is mandatory** — it has the canonical streaming order.
-
-Quick reminders:
-
-- `addStream` returns `nil` silently if camera permission isn't granted OR the device session isn't `.started`. Order of operations: permission → createSession → deviceSession.start() → wait for state == `.started` → addStream → install listeners → stream.start(). All of this is implemented in `RayBanManager.beginStreamSession`.
-- `createSession` throws `sessionAlreadyExists` when a previous session is held cross-process by the Meta AI bridge after an Xcode kill or crash. Auto-recovery via `forceReset()` (unregister → reregister) is wired in. There's also a manual "Reset connection" button on the Glasses Setup screen.
-- The audio engine path is **disabled** in `GameAudio` because programmatic synth crashed AVAudioEngine with "player did not see an IO cycle" AND sounded bad. Speech callouts via AVSpeechSynthesizer still work. The synth code is preserved (gated behind `engine.isRunning`) for the next pass that swaps in real audio samples (planned: archive.org bowling SFX, but never wired up — see Open work below).
-
----
-
-## Architecture cheat-sheet
+## File layout
 
 ```
 ClaudeVision/ios/ClaudeVision/
-├── ClaudeVisionApp.swift            App entry; configures DAT SDK
-├── Info.plist                       MetaAppID, ClientToken, Bluetooth permissions, MWDAT keys
 ├── Gaming/
-│   ├── Game.swift                   Protocol — handle(event), handleMotion(vector)
-│   ├── GameCoordinator.swift        Wires engine → active game; forwards events AND liveVector
-│   ├── GestureEngine.swift          Optical-flow → MotionClassifier; publishes events + liveVector
-│   ├── MotionClassifier.swift       Discrete flick/swing/hold + direction
-│   ├── ProgressStore.swift          Persistent per-game cumulative score → unlocks
-│   ├── DailyChallenge.swift         Date-stamped challenge generator
-│   ├── GestureRecorder.swift        Replay system for dev scenarios
-│   ├── TestScenarios.swift          Recorded scripts
-│   ├── Games/
-│   │   ├── BowlingGame.swift        ⭐ Main focus this session
-│   │   ├── TennisGame.swift         Untouched
-│   │   ├── PingPongGame.swift       Untouched
-│   │   ├── BoxingGame.swift         Untouched
-│   │   ├── ArcheryGame.swift        Untouched
-│   │   └── FruitSlashGame.swift     Untouched
-│   └── Venues/
-│       ├── Venue.swift              Data model + library
-│       ├── BowlingVenues.swift      ⭐ 6 themed scenes (this session)
-│       └── (others)                 Unchanged
-├── Services/
-│   ├── RayBanManager.swift          ⭐ MWDAT lifecycle + auto-recovery
-│   ├── GameAudio.swift              Speech only (synth disabled)
-│   ├── AppIconManager.swift         Alt icon switcher
-│   └── FrameSource.swift            Protocol
+│   ├── Game.swift                  Protocol — handle, handleMotion, etc.
+│   ├── GameCoordinator.swift       Wires engine → active game
+│   ├── GestureEngine.swift         Optical-flow → MotionClassifier
+│   ├── GestureEvent.swift          (now includes lateralCurvature)
+│   ├── MotionClassifier.swift      Now has maxGestureDuration cutoff (cuts post-flick latency)
+│   ├── ProgressStore.swift         Per-game cumulative score → unlocks
+│   ├── DailyChallenge.swift / GestureRecorder.swift / TestScenarios.swift  Untouched
+│   ├── Games/                      Pure model files, one per game
+│   ├── Venues/                     Per-game venue lists + SwiftUI backgrounds
+│   ├── Bowling/                    SceneKit module
+│   ├── Tennis/                     SceneKit module
+│   ├── PingPong/                   SceneKit module
+│   ├── Boxing/                     SceneKit module
+│   ├── Archery/                    SceneKit module (with camera follow tracker)
+│   ├── Firefox/                    SceneKit module (with render-tick bridge)
+│   ├── FruitSlash/                 SpriteKit module (was SceneKit, redesigned)
+│   ├── Jamario/                    SpriteKit module + sprite scene
+│   └── JamarioStreets/             SpriteKit module
+├── Services/                       RayBanManager, GameAudio (synth disabled), AppIconManager, FrameSource
 └── Views/
-    ├── ContentView.swift            Root router; scenePhase cleanup hook
-    ├── GameSessionView.swift        ⭐ Per-game session screen; bowling has full-bleed branch
-    ├── HomeView.swift               Dashboard (vertical scroll + horizontal game carousel)
-    ├── GlassesSetupView.swift       Connect/Start + Reset Connection button
-    ├── VenueSelectView.swift        Venue picker
-    ├── DailyChallengeCard.swift
-    ├── DebugPanelView.swift
-    ├── LaunchSplashView.swift
-    ├── ShareCardView.swift
-    ├── UnlockCelebration.swift
-    ├── AnimeStyle.swift             Halftone, BurstBadge, SpeedLines, etc.
-    └── Theme.swift                  Color palette + Radius constants
+    ├── ContentView.swift           Registers all games with the coordinator
+    ├── GameSessionView.swift       Hero-art DISPATCHER + ~1500 lines of dead SwiftUI primitives
+    ├── HomeView.swift              Horizontal game carousel (240×240 cards)
+    ├── GlassesSetupView.swift / VenueSelectView.swift / etc.
+    └── (dashboards, share cards, splash, theme)
 ```
 
-The **bowling-specific code is all in three files**: `BowlingGame.swift` (model + state machine), `BowlingVenues.swift` (six venue scenes), and the bowling section of `GameSessionView.swift` (which contains: `BowlingArt`, `BowlingScoreboard`, `BowlingPinSpotter`, `BowlingCountdown`, `BowlingAimGuide`, `BowlingBallView`, `BowlingBallPicker`, `BowlingCelebration`, plus shape primitives `BowlingLaneShape`, `BowlingLaneStripe`, `BowlingGutterShape`, `BowlingLaneGrain`, `BowlingPinShape`, `Triangle`, `Pentagon`).
+---
+
+## Sprite assets
+
+- 13 imagesets at top level of `Assets.xcassets/` (jamario_idle, jamario_run_1..8, jamario_jump, jamario_punch, jamario_kick, jamario_enemy_idle, jamario_enemy_walk_1/2, jamario_coin).
+- Loaded via `SKTexture(image: UIImage(named: "jamario_idle")!)`. **Don't use `Jamario.spriteatlas/` with `provides-namespace: true`** — that broke silently in the first attempt.
+- 60 unused source PNGs sit in `JAMARIO GAME/2D SPRITES/` outside the iOS target — available for future polish (climbing rope, throwing chain, payphone scenes, vault scenes, helicopter set pieces).
+- Source MP4 of Jamario running at `Apps/SUPER-JAMARIO/hf_20260426_094306_*.mp4`.
+- Helper: `/tmp/strip_checker.py` chroma-keys the AI-generated checkerboard background out of any sprite PNG (transparent grays with avg ≥ 120, neutrality within ±10). The AI-generated PNGs LOOK transparent in previewers but the checkerboard is baked-in pixels — must be stripped before bundling.
 
 ---
 
-## What was built this session — chronological commits on `claude/meta-glasses-bowling-game-DcTR3`
+## Connection-blocked recovery (recurring issue)
 
-| Commit | Subject |
-| --- | --- |
-| `7b40cc0` | fix: GameCoordinator default-arg main-actor bug (the original Issue #2) |
-| `36fa1cc` | fix: route StreamSession through DeviceSession (MWDAT 0.6 API migration) |
-| `e82017a` | chore: nonisolated computeFlow to silence Swift 6 warning |
-| `0d43266` | fix: defer createSession until AutoDeviceSelector finds a device |
-| `c335e1e` | fix: actionable sessionAlreadyExists error |
-| `cecbf70` | fix: scenePhase cleanup so app-background releases the SDK session |
-| `cf79359` | chore: log start() entry conditions |
-| `0760dbd` | fix: addStream order — added before deviceSession.start() (later reverted to start-first) |
-| `c59ace5` | fix: poll deviceSession.state == .started before addStream |
-| `b68e838` | feat(bowling): gentle chin-flick threshold + spoken score callouts |
-| `1fe8223` | feat(bowling): synthesized SFX (later disabled — crashed engine) |
-| `014ff1a` | fix: Theme.text → Theme.textPrimary; disable crashing SFX |
-| `d0d520d` | feat(bowling): real lane visual (perspective, 10 pins, animated ball) |
-| `2462508` | feat(home): scrollable dashboard + horizontal game carousel |
-| `4493ff3` | feat(bowling): QubicaAMF pinspotter mechanism |
-| `1cead45` | feat(bowling): gutter direction + ball with finger holes + scoreboard apparatus + dismissable coaching |
-| `f2e7c8c` | feat(bowling): real-bowling state machine + correct pin shape (USBC proportions) |
-| `3578d74` | feat(bowling): arcade 3-2-1 countdown before each turn |
-| `5b97923` | feat(bowling): aim-then-release (discrete-tilt step model — later replaced) |
-| `80d115e` | feat: auto-recover from sessionAlreadyExists + manual Reset Connection button |
-| `2731c8a` | feat(bowling): glossy lane + arcade celebrations (option C — STRIKE pop-up + particles + shake) |
-| `428561a` | feat(bowling): six themed venue backgrounds (island, desert, jungle, sunset strip, neon lanes, dragon shrine) |
-| `f36016d` | feat(bowling): real-time aim from live head motion + 10s aim window + scoreboard clamp + drop frame counter |
-| `bb9fe1e` | feat(bowling): tilt the lane plane in 3D (rotation3DEffect, anchor .bottom, perspective 0.85) |
-| `9db574a` | feat(bowling): full-bleed lane + camera follow + ball spin + light trail + red aim beam |
-| `3e93633` | feat(bowling): themed ball picker + 3-strike turkey fire bonus |
+When the user says "I'm stuck on START FEED" with `sessionAlreadyExists`-style symptoms:
+
+1. **Glasses Setup screen → "Reset connection" button.** Triggers `forceReset()` which unregisters + re-registers via Meta AI bridge. Works ~80% of the time.
+2. **iPhone Settings → Bluetooth → forget "Ray-Ban Meta", re-pair via Meta AI app.** Works ~95% of the time when Reset doesn't.
+3. **Phone reboot** is the absolute last resort and only if Bluetooth is wedged at the iOS level.
+
+Source-of-truth for the SDK lifecycle is [`memory/mwdat_streaming_order.md`](file:///Users/otti/.claude/projects/-Users-otti-Documents-GitHub-VisionClaude-Gaming/memory/mwdat_streaming_order.md). Read first when touching `RayBanManager`.
 
 ---
 
-## Bowling state machine (current model)
+## User's pet peeves (re-read these to save a frustration cycle)
+
+1. **"Just try it. Use computer-use. Stop asking me."** Xcode is at click-tier on display "LS32CG51x". Take screenshots, click Run, read the console yourself. CAVEAT: clicking inside the editor pane has caused garbage characters to appear in source files. **Click only the Run button at the very top of the toolbar.**
+2. **"One terminal command per code block."** Bash hook actively blocks chained `git add && commit && push`. Always split.
+3. **"Don't ask me questions when in auto-mode."** The user is hands-off. Make reasonable assumptions and proceed; user gives course corrections as needed.
+4. **Honest about limits.** SwiftUI primitives can't match polished commercial games — that was the lesson from the bowling deep-dive. Always reach for the right tool (SceneKit for 3D, SpriteKit for 2D).
+5. **Real bowling rules.** 10 frames, strike/spare bonus scoring, proper 10th-frame fill-ball logic. Don't simplify.
+6. **No phallic pin shape.** USBC-spec proportions in `BowlingPinShape` (now superseded by SceneKit cylinder pin physics anyway).
+7. **Glasses-only motion input.** No phone-IMU fallback.
+8. **Themed venues, not solid colors.** Each venue has its own scene treatment.
+
+---
+
+## SDK gotchas (MWDAT 0.6) — keep in memory
+
+The MWDAT iOS SDK has several non-obvious requirements documented in [`memory/mwdat_streaming_order.md`](file:///Users/otti/.claude/projects/-Users-otti-Documents-GitHub-VisionClaude-Gaming/memory/mwdat_streaming_order.md). Read first when touching streaming code.
+
+Key reminders:
+- `addStream` returns `nil` silently if camera permission isn't granted OR the device session isn't `.started`. Order: permission → createSession → deviceSession.start() → wait for `.started` → addStream → install listeners → stream.start(). Implemented in `RayBanManager.beginStreamSession`.
+- `createSession` throws `sessionAlreadyExists` when a previous session is held cross-process by the Meta AI bridge after an Xcode kill or crash. Auto-recovery via `forceReset()` (unregister → reregister) is wired in. There's also a manual "Reset connection" button on the Glasses Setup screen.
+- Audio engine path is **disabled** in `GameAudio` because programmatic synth crashed AVAudioEngine with "player did not see an IO cycle" AND sounded bad. Speech callouts via AVSpeechSynthesizer still work. The synth code is preserved (gated behind `engine.isRunning`) for the next pass that swaps in real audio samples.
+
+---
+
+## Workflow rules (the user's hard boundaries)
+
+1. **Branch:** `claude/meta-glasses-bowling-game-DcTR3`. Never main.
+2. **Bash:** one command per block. The hook will deny `git add && git commit && git push`.
+3. **xcodegen:** runs whenever a new file is added (folder discovery is automatic but `.pbxproj` needs regenerating). The user has it installed at `/opt/homebrew/bin/xcodegen`.
+4. **swift-format hook (`~/.claude/hooks/swift-format-on-edit.sh`)** runs on every Edit — expect indentation churn (4-space → 2-space) on every commit. The diff will be 50-150 lines on a 3-line logical change. Mention this in commit messages so the user knows.
+5. **Don't pre-tune motion thresholds.** Wait for real numbers. Bowling's threshold `0.005 / 0.5 / maxGestureDuration 0.6` is the validated baseline.
+
+---
+
+## Recent commits (most recent first)
 
 ```
-Phase: countingDown → idle → rolling → knocking → resetting → idle (next ball)
-                          ↘                                ↘
-                           rolling → knocking → finalScoring (game over)
+45836c7  feat(fruitslash): redesigned as AI Slasher — head-tracked samurai sword + AI/LLM logos + real slice
+e87a152  fix(bowling, boxing): camera follows ball to the pins; boxing fights last 30-60s (HP 100→400)
+7f33cb5  feat(firefox): new SceneKit flight combat — first-person dogfight inspired by 1984 Atari Firefox
+78a4dca  feat(jamario-streets): new SpriteKit beat-em-up — Streets-of-Rage style brawler
+0855539  feat(jamario): 8-frame run cycle extracted from user-provided MP4
+132cc23  fix(jamario): sprites actually visible — drop sprite-atlas + chroma-key checkerboard
+90715d7  feat(jamario): wire 2D character sprites — texture atlas + run cycle + jump + enemy walk
+6eb16c3  feat(jamario): new SpriteKit auto-runner platformer named after the player
+6492d6a  fix(home): force horizontal carousel on game cards
+20c07e9  feat(boxing): opponent gets a real face + body details
+0c7c0d7  feat(archery): camera follows in-flight arrow
+c0fc3c1  feat(archery): SceneKit port — 3D target, arrow nock + flight animation
+0aaa527  feat(tennis): SceneKit port
+2c2986b  feat(pingpong): SceneKit port
+b597d19  feat(fruitslash): SceneKit port (later replaced by SpriteKit AI Slasher)
+7685b5f  feat(boxing): replace heavy bag with first-person 3D humanoid boxer
+e5c7546  feat(boxing): SceneKit port v1 (heavy bag — replaced)
+d50fe0e  feat(bowling): turkey fireworks + slow-mo on contact
+ac7b6a5  fix(bowling): force-close gestures past max duration to cut chin-flick latency
 ```
 
-- **countingDown** (1.8s): 3-2-1 overlay; aim resets to 0; input ignored.
-- **idle**: 10s aim window; live head motion (vector.x) integrated into `aimPosition` ∈ [-1, +1]; only chin UP/DOWN releases. Auto-release at 0s with mid power.
-- **rolling** (1.5s): ball animates from player end to pins, curves into gutter if `|aim| > 0.7`, otherwise straight along aim vector.
-- **knocking** (0.8s): pinsRemaining decrements; pins fade + rotate (this is what the user calls "disappearing"). Pinspotter rack descends, sweep traverses.
-- **resetting** (0.6s): rack lifts back up; for frame-end, fresh 10 pins.
-
-`handleMotion(vector)` only writes aim when `aimTimeRemaining != nil && phase == .idle`. Outside that window, motion is ignored (so head movement during ball travel doesn't leak into next aim).
-
-`consecutiveStrikes` counter drives `isOnFire` (≥3). `activeSkin = isOnFire ? .fire : selectedSkin`. Bonus: +5 per pin while on fire.
+Use `git log --oneline -30 claude/meta-glasses-bowling-game-DcTR3` for the full picture.
 
 ---
 
-## What does NOT match the reference apps yet — be honest with the user
+## Known deferred items
 
-1. **Pins fade rather than fall.** Currently a fallen pin is rendered with `.opacity(0.25)`, `.rotationEffect(±55°, anchor: .bottom)`, and `.scaleEffect(y: 0.55, anchor: .bottom)`. With the correct spring animation it reads as a tip-over; without it, it reads as a shrink-fade. The user perceives it as fade. **Fix path:** make the rotation more violent (90° instead of 55°), add a 3D-axis component (axis: (1,1,0) so the pin tips both forward and sideways), and consider a brief `offset` spring to simulate the pin sliding off the deck. Or use TimelineView for keyframed multi-stage animation.
-2. **Camera doesn't actually travel; it zooms.** `scaleEffect(1 + (1 - ballRollProgress) * 0.18, anchor: .top)` is a fake. Real camera-follow needs translating the lane upward AND scaling AND maybe rotating the perspective tilt. Closest fake: also animate `rotation3DEffect`'s degrees (more tilt at start, less at end, so the lane "lifts up" as we approach the pins). **The user explicitly called this out as missing.**
-3. **No sprite-based ball trail.** Just a stroked line. Reference apps use particle sprites with motion blur. We can fake more with multiple offset blurred copies but it's diminishing returns.
-4. **Pin shadows are static.** They don't shift with light direction or animate when pins fall.
-5. **Audio is speech-only.** No real bowling SFX. The user repeatedly said "the SFX sound like crap." Plan was to fetch CC0 samples from `archive.org/details/78_2-bowling-and-making-a-strike_gbia0187400` (URLs collected, never bundled). Pixabay/Mixkit are blocked behind Cloudflare/JS and don't yield direct URLs to WebFetch.
-6. **No real 3D pins.** SwiftUI primitives only. Real pin geometry would require SceneKit / RealityKit / Metal.
-
-If the user keeps asking for "more 3D", the real answer is to integrate a Metal/SceneKit view for the lane. That's a 1-day refactor minimum and adds a hard dependency on 3D content. **Discuss this trade-off with the user before going down that path.**
-
----
-
-## Open / unfinished work in priority order
-
-1. **The user's running app may not match the source.** First action: make sure they're on a clean rebuild before touching anything else.
-2. **Pins falling, not fading.** Highest-impact visual fix; isolated to `pin(displayIndex:)` in `GameSessionView.swift`. Aim for a 2-3 stage keyframed animation: snap rotation forward 30° → settle to 75° tipped + slight slide off deck.
-3. **Real ball-following camera.** Animate `rotation3DEffect` degrees and add a `.offset(y:)` proportional to `ballRollProgress` so the lane "scrolls" toward the player.
-4. **Real bowling SFX bundle.** Use the archive.org URLs (already collected, see CHANGELOG section in `memory/mwdat_streaming_order.md` — no, they're in this session's chat, repeat below):
-   - `https://archive.org/download/78_2-bowling-and-making-a-strike_gbia0187400/02%20-%202.%20Bowling%20and%20Making%20A%20Strike.mp3` (one we already curl'd to `/tmp/bowling-sfx/strike1.mp3`, ~700KB)
-   - Tracks 1-6 are alternates / ambient mixes
-   Bundle into `Resources/Audio/`, update `project.yml` to include resources, swap `GameAudio.playBowlSequence` to play AVAudioPlayer files. Re-run `xcodegen` after.
-5. **Smaller chrome.** User said "let the bowling game be the star." Current chrome already uses `.ultraThinMaterial`; the scoreboard could be 60% of its current height. Coaching panel auto-collapse to a single line when not the player's first turn. Motion bar can be removed entirely or hidden behind a long-press.
-6. **Tennis / Boxing / etc.** Untouched all session. They still work but their visuals are sparse. Future work.
-7. **Score display includes turkey bonus inconsistency.** `score = computeScore() + turkeyBonus` — the turkey bonus is added on top of the canonical bowling score, which means the scoreboard's per-frame cumulative totals don't include the bonus, but the displayed total does. Probably not what the user wants long-term. Either bake bonus into the frame display or surface it as a separate "Bonus: +N" badge.
+- **Bowling audio (Phase C)** — never wired. Previous AVAudioEngine synth attempt crashed with "player did not see an IO cycle." Needs sourced .caf samples (archive.org URLs were collected in an earlier session — see `memory/mwdat_streaming_order.md` history). Skipped to avoid shipping a fragile audio path.
+- **Dead SwiftUI primitives in `GameSessionView.swift`** — ~1500 lines of `BowlingArt` / `TennisArt` / `BoxingArt` / `ArcheryArt` / `PingPongArt` / `GenericArt` plus a dozen helper Shape structs no longer referenced from the dispatcher. Build is clean, runtime unaffected, just visual noise. (`FruitSlashArt` was already removed during the AI Slasher rewrite.)
+- **Per-game polish** — many games shipped at "v1, looks right, plays right" bar. Camera dynamics, particle effects, geometry tuning are all candidates for follow-ups.
 
 ---
 
@@ -198,70 +171,18 @@ If the user keeps asking for "more 3D", the real answer is to integrate a Metal/
 `/Users/otti/.claude/projects/-Users-otti-Documents-GitHub-VisionClaude-Gaming/memory/`
 
 - **MEMORY.md** — index
+- **user_name.md** — Jamario, his first name (note spelling)
 - **workflow_rules.md** — one bash command per block; never push to main; bowling branch only
 - **computer_use_granted.md** — Xcode at click tier on LS32CG51x display
 - **mwdat_streaming_order.md** — canonical SDK streaming order (read first when touching RayBanManager)
 - **bowling_threshold.md** — `activeThreshold = 0.005` validated by user as "much better"
-- **project_state.md** — connection works; tuning + UX phase
-
----
-
-## Reference images URL list
-
-The user sent these YouTube Shorts as visual references this session:
-
-- `https://www.youtube.com/shorts/OsOLWc2Kj3I` — Bowling Fury (arcade explosion vibe)
-- `https://www.youtube.com/shorts/Sy5ujtFgz0Y` — Skyline Bowling (glossy, full-bleed, depth-aware aim laser)
-- `https://www.youtube.com/shorts/6DCkljTow3A` — Bowling Crew Golden Sands
-
-Plus screenshots:
-- "Hells Balls" — Mars/skull theme, full-bleed lane, themed venue surrounds
-- "Build N Roll" construction-site lane
-- "Strike From Mars" celebration sequence — green spark trail behind ball, big STRIKE animation
-- QubicaAMF scoreboard (reference)
-- Bowling Crew aim selector — circular arc around the ball with rotating arrows + red aim laser pointing at pins
-
----
-
-## Workflow rules (the user's hard boundaries)
-
-1. **Branch:** `claude/meta-glasses-bowling-game-DcTR3`. Never main.
-2. **Bash:** one command per block. The hook will deny `git add && git commit && git push`.
-3. **xcodegen:** the user runs it — only when `project.yml` changed (new files in source tree are auto-discovered, but Xcode's project.pbxproj does need regenerating to pick them up).
-4. **swift-format hook (`~/.claude/hooks/swift-format-on-edit.sh`)** runs on every Edit — expect indentation churn (4-space → 2-space) on every commit. The diff will be 50–150 lines on a 3-line logical change. Mention this in commit messages so the user knows.
-5. **Don't pre-tune motion thresholds.** Wait for real numbers. Bowling's threshold `0.005 / 0.5` is the validated baseline.
-
----
-
-## Diagnostic procedure when "feature X isn't appearing"
-
-1. `git log --oneline -10` — confirm the commit is on the local branch.
-2. `xcodebuild -project ClaudeVision.xcodeproj -scheme ClaudeVision -destination 'generic/platform=iOS' -quiet build` from `ClaudeVision/ios/` — confirm source compiles.
-3. Computer-use screenshot of Xcode. Read top-right status — if "Build Failed" or stale timestamp, the user is on the prior binary.
-4. **Tell the user: Cmd+Shift+K, then Cmd+R.** Don't theorize about the feature being broken until they confirm a fresh build.
-5. If a fresh build still doesn't show it, then dig into the code.
-
-This was the failure mode this entire session. Most user complaints "I don't see X" resolved themselves after a clean rebuild.
-
----
-
-## Audio session warning
-
-`GameAudio.swift` line 1 (the `import AVFoundation`) was corrupted twice in this session by accidental clicks landing in the editor + macOS dictation/long-press menu inserting text. If you see "Build Failed" with `Cannot find 'AVFoundation' in scope`, read the first line of `GameAudio.swift` first — fix is just to make sure it reads `import AVFoundation`. Do not click in the Xcode editor pane to "verify" — read via Bash/Read tool.
+- **project_state.md** — most recent project snapshot
 
 ---
 
 ## What to do FIRST in the next session
 
-1. Run `git log --oneline -5` to confirm `3e93633` (or later) is the head of the bowling branch.
-2. Read `memory/mwdat_streaming_order.md`.
-3. Run `xcodebuild ... build` from `ClaudeVision/ios/` to confirm the source compiles. Should succeed with only the icon warning.
-4. Take an Xcode screenshot. Verify build status, ask user to do **Cmd+Shift+K + Cmd+R** if it's stale.
-5. **Don't add features until the user confirms they see the existing committed work** — full-bleed lane, ball picker, turkey fire, themed venues. If they still don't, dig into Xcode build logs (the build is failing on their side somehow that the CLI doesn't reproduce).
-6. Once parity is confirmed, the highest-priority unfinished item is **pins falling instead of fading** — see Open work #2.
-
----
-
-## Final sanity-check note for the next session
-
-The user is patient and forgiving when I tell the truth, and very impatient when I keep shipping commits that don't materialize on their phone. Honesty about what SwiftUI can and can't do beats over-promising. If they ask for "real 3D" again, suggest the SceneKit/Metal route as a deliberate choice, not a polish iteration.
+1. Read this file (you're doing it) and `git log --oneline -10` to confirm the branch head.
+2. Read `memory/project_state.md` and `memory/user_name.md`.
+3. Take an Xcode screenshot. Verify build status. If stale → ask user to do **Cmd+Shift+K + Cmd+R**.
+4. Wait for the user to describe what they want; don't dive in cold.
