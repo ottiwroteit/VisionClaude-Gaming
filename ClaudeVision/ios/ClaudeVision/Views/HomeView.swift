@@ -198,38 +198,36 @@ struct HomeView: View {
     }
   }
 
-  /// Horizontal carousel of game cards. Each card snaps to the viewport
-  /// so one game is fully on-screen at a time with a hint of the next.
-  /// The whole HomeView already scrolls vertically, so this section just
-  /// scrolls sideways within its row.
+  /// Horizontal carousel of game cards. Each card has a fixed width so
+  /// the row clearly extends past the right edge of the screen — that
+  /// visual hint is what tells the user the row is sideways-swipeable.
+  /// Card height is fixed too so the section sits compact within the
+  /// outer vertical scroll.
   private var gamesCarousel: some View {
-    GeometryReader { geo in
-      let cardWidth = max(220, geo.size.width * 0.86)
-      ScrollView(.horizontal, showsIndicators: false) {
-        HStack(spacing: 14) {
-          ForEach(coordinator.allGames, id: \.id) { game in
-            Button {
-              onPickGame(game.id)
-            } label: {
-              GameCard(
-                game: game,
-                ready: rayBan.isRunning,
-                venueName: progress.currentVenue(for: game.id).name,
-                total: progress.total(for: game.id),
-                nextUnlock: progress.progressToNextUnlock(for: game.id)?.next
-              )
-              .frame(width: cardWidth)
-            }
-            .buttonStyle(.plain)
-            .disabled(!rayBan.isRunning)
+    ScrollView(.horizontal, showsIndicators: false) {
+      HStack(spacing: 14) {
+        ForEach(coordinator.allGames, id: \.id) { game in
+          Button {
+            onPickGame(game.id)
+          } label: {
+            GameCard(
+              game: game,
+              ready: rayBan.isRunning,
+              venueName: progress.currentVenue(for: game.id).name,
+              total: progress.total(for: game.id),
+              nextUnlock: progress.progressToNextUnlock(for: game.id)?.next
+            )
+            .frame(width: 240, height: 240)
           }
+          .buttonStyle(.plain)
+          .disabled(!rayBan.isRunning)
         }
-        .padding(.horizontal, 4)
-        .scrollTargetLayoutCompat()
       }
-      .scrollTargetBehaviorViewAlignedCompat()
+      .padding(.horizontal, 4)
+      .scrollTargetLayoutCompat()
     }
-    .frame(height: 280)
+    .scrollTargetBehaviorViewAlignedCompat()
+    .frame(height: 248)
   }
 }
 
