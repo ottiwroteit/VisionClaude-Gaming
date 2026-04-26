@@ -422,7 +422,10 @@ struct GameSessionView: View {
         BowlingScene(game: g, venueID: progress.currentVenue(for: g.id).id)
       }
     case "tennis": if let g = game as? TennisGame { TennisArt(game: g) }
-    case "pingpong": if let g = game as? PingPongGame { PingPongArt(game: g) }
+    case "pingpong":
+      if let g = game as? PingPongGame {
+        PingPongScene(game: g, venueID: progress.currentVenue(for: g.id).id)
+      }
     case "boxing":
       if let g = game as? BoxingGame {
         BoxingScene(
