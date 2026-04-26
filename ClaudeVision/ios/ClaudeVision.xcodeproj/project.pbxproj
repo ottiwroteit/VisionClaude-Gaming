@@ -19,6 +19,7 @@
 		245590573688511C4894D87C /* BoxingSceneTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = F13C79F9619D6ACADF105E25 /* BoxingSceneTheme.swift */; };
 		26DF4D6AB4300A244E2F9993 /* MWDATCamera in Frameworks */ = {isa = PBXBuildFile; productRef = F89EE55D2F5EFD824C5EAAA1 /* MWDATCamera */; };
 		2A77669B0885E5690DB0E5B9 /* GestureRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A8D0C3C3C22FDAC032A85DD /* GestureRecorder.swift */; };
+		2BD9FBB7428ED087E0A6882D /* FruitSlashGameScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACE9EBC53E58A502D88241D8 /* FruitSlashGameScene.swift */; };
 		2E15B4D77CEEF51A0D721B79 /* ShareCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF54E20B5EDB91B4B94884D /* ShareCardView.swift */; };
 		2F08588A0FA5377BED01C1DB /* FrameSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 704D8A46187AD105F8BE0E3F /* FrameSource.swift */; };
 		31583FD9A5085861FD73CEF4 /* TennisVenues.swift in Sources */ = {isa = PBXBuildFile; fileRef = F834FD6E9D77D33AC1F4DFAC /* TennisVenues.swift */; };
@@ -29,7 +30,6 @@
 		55B34005F5174962FB930C93 /* PingPongVenues.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7AD775A1FBBCB1AA720652C /* PingPongVenues.swift */; };
 		562D4166974B9C79B11BFFD5 /* FruitSlashSceneTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADDEADF115E191D862A525DD /* FruitSlashSceneTheme.swift */; };
 		575254176078CCEA77498FCB /* PingPongScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 919B652B84C55889E674679F /* PingPongScene.swift */; };
-		5850E3B397B3B10042D13534 /* FruitSlashSceneController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA86BD0B0649157D710DD66D /* FruitSlashSceneController.swift */; };
 		5A4C630503D58FEBCA9730BE /* BowlingPinTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5915F977AA07A85391A894E2 /* BowlingPinTracker.swift */; };
 		5A609BA22E81BC0122CA7041 /* TennisSceneTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF714D588F286FE188F68CE0 /* TennisSceneTheme.swift */; };
 		5DF75E250395E1B498E80EE0 /* TennisSceneController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF4B9FBF85000A7FF9F84BFB /* TennisSceneController.swift */; };
@@ -138,6 +138,7 @@
 		A66E4598C67C88CA5E384E5A /* FirefoxGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirefoxGame.swift; sourceTree = "<group>"; };
 		AA383D3AF2B7F2F9017E42D7 /* TennisGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TennisGame.swift; sourceTree = "<group>"; };
 		AC324F474253831B139CE101 /* BoxingScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoxingScene.swift; sourceTree = "<group>"; };
+		ACE9EBC53E58A502D88241D8 /* FruitSlashGameScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FruitSlashGameScene.swift; sourceTree = "<group>"; };
 		ADDEADF115E191D862A525DD /* FruitSlashSceneTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FruitSlashSceneTheme.swift; sourceTree = "<group>"; };
 		AFF54E20B5EDB91B4B94884D /* ShareCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardView.swift; sourceTree = "<group>"; };
 		B23BC76C39E36864D05051B1 /* FirefoxSceneController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirefoxSceneController.swift; sourceTree = "<group>"; };
@@ -155,7 +156,6 @@
 		D80B4A559F7D180D8DCE6033 /* ClaudeVisionApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeVisionApp.swift; sourceTree = "<group>"; };
 		DB1873986A1185D916CC7800 /* AnimeStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimeStyle.swift; sourceTree = "<group>"; };
 		E46D4CCBEF0DB21117597803 /* JamarioSceneTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JamarioSceneTheme.swift; sourceTree = "<group>"; };
-		EA86BD0B0649157D710DD66D /* FruitSlashSceneController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FruitSlashSceneController.swift; sourceTree = "<group>"; };
 		EB4348CD053A448942FC6213 /* FirefoxVenues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirefoxVenues.swift; sourceTree = "<group>"; };
 		EC9895547C430C02C8901979 /* JamarioVenues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JamarioVenues.swift; sourceTree = "<group>"; };
 		ED14DBCA12F0F32259D59338 /* UnlockCelebration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockCelebration.swift; sourceTree = "<group>"; };
@@ -344,8 +344,8 @@
 		994091F2CF8765C5848315EE /* FruitSlash */ = {
 			isa = PBXGroup;
 			children = (
+				ACE9EBC53E58A502D88241D8 /* FruitSlashGameScene.swift */,
 				ED91DFCFEE47918D4702E3F3 /* FruitSlashScene.swift */,
-				EA86BD0B0649157D710DD66D /* FruitSlashSceneController.swift */,
 				ADDEADF115E191D862A525DD /* FruitSlashSceneTheme.swift */,
 			);
 			path = FruitSlash;
@@ -510,8 +510,8 @@
 				7DA0AB8BF19D2EBAA6426C7F /* FirefoxVenues.swift in Sources */,
 				2F08588A0FA5377BED01C1DB /* FrameSource.swift in Sources */,
 				61AA0197E1DCB80E5534BF3D /* FruitSlashGame.swift in Sources */,
+				2BD9FBB7428ED087E0A6882D /* FruitSlashGameScene.swift in Sources */,
 				1272D61A4438E3E1FAA4141B /* FruitSlashScene.swift in Sources */,
-				5850E3B397B3B10042D13534 /* FruitSlashSceneController.swift in Sources */,
 				562D4166974B9C79B11BFFD5 /* FruitSlashSceneTheme.swift in Sources */,
 				3F6F0FE0DACC7F7AAE94194A /* FruitSlashVenues.swift in Sources */,
 				981E8AA608802E6E6A955FCF /* Game.swift in Sources */,

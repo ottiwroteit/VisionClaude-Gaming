@@ -1783,42 +1783,11 @@ private struct ArcheryArt: View {
   }
 }
 
-private struct FruitSlashArt: View {
-  @ObservedObject var game: FruitSlashGame
-  private var tint: Color { Theme.color(for: game.tint) }
-  var body: some View {
-    VStack(spacing: 12) {
-      HStack {
-        ForEach(0..<3, id: \.self) { i in
-          Image(systemName: i < game.lives ? "heart.fill" : "heart")
-            .foregroundColor(tint)
-        }
-      }
-      ZStack {
-        RoundedRectangle(cornerRadius: 12).fill(tint.opacity(0.2))
-        if let fruit = game.currentFruit {
-          Image(systemName: fruit.isBomb ? "bolt.fill" : "leaf.fill")
-            .font(.system(size: 70))
-            .foregroundColor(fruit.isBomb ? Theme.danger : tint)
-            .offset(fruitOffset(for: fruit.direction))
-            .transition(.scale)
-            .id(fruit.id)
-        }
-      }
-      .frame(height: 180)
-      .animation(.easeInOut(duration: 0.25), value: game.currentFruit?.id)
-    }
-  }
-  private func fruitOffset(for direction: GestureDirection) -> CGSize {
-    switch direction {
-    case .up: return CGSize(width: 0, height: -50)
-    case .down: return CGSize(width: 0, height: 50)
-    case .left: return CGSize(width: -80, height: 0)
-    case .right: return CGSize(width: 80, height: 0)
-    default: return .zero
-    }
-  }
-}
+// FruitSlashArt removed — game is now SpriteKit-driven via
+// FruitSlashScene/FruitSlashGameScene. The model no longer exposes
+// `currentFruit` (one-at-a-time spawn was replaced with multi-spawn
+// sword-slasher gameplay), so this dead struct's references would
+// not compile.
 
 private struct GenericArt: View {
   let game: any Game

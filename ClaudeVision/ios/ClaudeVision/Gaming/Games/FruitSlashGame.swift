@@ -1,146 +1,124 @@
 import Foundation
+import simd
 
+/// AI Slasher (kept on the `fruitslash` game id for backward
+/// compatibility with the existing venue + dispatcher wiring).
+///
+/// The original spawn-one-fruit-and-flick model was redesigned per
+/// user feedback: now the player wields a samurai sword that tracks
+/// head movement, and stylized AI/LLM company logos (ChatGPT, Claude,
+/// Gemini, Llama, Mistral, Grok, …) fall from the top of the screen.
+/// Move the sword through them to slice. A few are "rogue AGI" bombs —
+/// slicing those costs a life.
+///
+/// All gameplay rendering lives in the SpriteKit scene; this object
+/// publishes the swordCommand (head-tilt) the scene reads each frame
+/// plus score / lives / event callbacks the scene fires on slices.
 @MainActor
 final class FruitSlashGame: ObservableObject, Game {
   let id = "fruitslash"
-  let title = "Meta Fruit Slash"
-  let howToPlay = "Flick your head in the direction of each flying fruit to slice it."
+  let title = "AI Slasher"
+  let howToPlay =
+    "Move your head to swing the sword. Slice every AI logo. Don't slice the AGI bombs."
   let tint: GameTint = .berry
 
-  /// Fruit slash wants fast, directional flicks. Low activeThreshold so
-  /// snaps register, tight flick window, and strong axis dominance so a
-  /// flick toward "up" doesn't get mis-labeled as "up-left".
+  /// Sword tracking wants smooth continuous motion, not flicks. Lower
+  /// activeThreshold keeps small intentional moves registering, but
+  /// the game itself doesn't gate on flicks — head-tilt drives the
+  /// sword directly via handleMotion.
   var preferredThresholds: MotionClassifier.Thresholds? {
     var t = MotionClassifier.Thresholds()
-    t.activeThreshold = 0.010
-    t.flickMaxDuration = 0.22
-    t.axisDominance = 2.0
+    t.activeThreshold = 0.008
+    t.flickMaxDuration = 0.30
+    t.maxGestureDuration = 0.55
     return t
   }
 
-  struct Fruit: Identifiable {
-    let id = UUID()
-    let direction: GestureDirection
-    let expiresAt: Date
-    let isBomb: Bool
-  }
+  // MARK: Published state
 
   @Published private(set) var score: Int = 0
   @Published private(set) var lives: Int = 3
-  @Published private(set) var currentFruit: Fruit?
-  @Published private(set) var statusLine: String = "Flick toward the fruit!"
+  @Published private(set) var slices: Int = 0
+  @Published private(set) var statusLine: String = "Move your head to swing the sword"
   @Published private(set) var isFinished: Bool = false
-  /// Last outcome from a resolved fruit (sliced cleanly, missed,
-  /// bomb-sliced, bomb-dodged, expired). The SceneKit scene reads
-  /// this to pick the right departure animation for the active
-  /// fruit node when it goes away.
-  @Published private(set) var lastOutcome: FruitOutcome? = nil
-  /// Bumps on every resolved fruit so the scene's onChange observer
-  /// fires even when consecutive outcomes match.
-  @Published private(set) var outcomeEventID: Int = 0
+
+  /// Live head-tilt command in [-1, +1] for each axis. The scene
+  /// reads this every frame to position the sword tip on screen.
+  @Published private(set) var swordCommand: SIMD2<Float> = .zero
+  /// Bumped on each slice so chrome can pop a +N badge.
+  @Published private(set) var sliceEventID: Int = 0
+  @Published private(set) var lastSliceWasBomb: Bool = false
+
   var activeModifier: VenueModifier = .default
 
-  struct FruitOutcome {
-    let direction: GestureDirection
-    let isBomb: Bool
-    let kind: Kind
-    enum Kind { case sliced, missed, bombSliced, bombDodged, expired }
-  }
+  // MARK: Tunables
 
-  private var spawnTimer: Timer?
-  private var difficulty: Double = 1.0
+  let pointsPerLogo: Int = 15
 
-  func start() {
-    reset()
-    scheduleSpawn()
-  }
+  // MARK: Game protocol
+
+  func start() { reset() }
 
   func reset() {
     score = 0
     lives = 3
-    currentFruit = nil
-    difficulty = 1.0
+    slices = 0
     isFinished = false
-    statusLine = "Flick toward the fruit!"
-    spawnTimer?.invalidate()
-    spawnTimer = nil
+    statusLine = "Slash every logo. Avoid the AGI bombs."
+    swordCommand = .zero
+    lastSliceWasBomb = false
   }
 
+  /// Discrete flicks are unused here — sword swing is continuous from
+  /// head-tilt — but we keep the protocol method as a no-op so the
+  /// engine plumbing stays uniform.
   func handle(_ event: GestureEvent) {
-    guard !isFinished, event.kind == .flick else { return }
-    guard let fruit = currentFruit else { return }
-
-    let matched = event.direction == fruit.direction
-    let kind: FruitOutcome.Kind
-    if fruit.isBomb {
-      if matched {
-        lives -= 1
-        statusLine = "Sliced a bomb! -1 life"
-        kind = .bombSliced
-        loseIfNeeded()
-      } else {
-        statusLine = "Good — you dodged the bomb"
-        score += 2
-        kind = .bombDodged
-      }
-    } else if matched {
-      let base = Int(1 + event.magnitude * 4)
-      score += Int(Double(base) * activeModifier.scoreMultiplier)
-      statusLine = "Slice! \(score)"
-      kind = .sliced
-    } else {
-      lives -= 1
-      statusLine = "Missed \(fruit.direction.rawValue) — \(lives) lives left"
-      kind = .missed
-      loseIfNeeded()
-    }
-    publishOutcome(direction: fruit.direction, isBomb: fruit.isBomb, kind: kind)
-    currentFruit = nil
+    // Intentionally empty.
   }
 
-  private func publishOutcome(direction: GestureDirection, isBomb: Bool, kind: FruitOutcome.Kind) {
-    lastOutcome = FruitOutcome(direction: direction, isBomb: isBomb, kind: kind)
-    outcomeEventID += 1
+  func handleMotion(_ vector: SIMD2<Float>) {
+    guard !isFinished else { return }
+    // Pass-through with a small deadzone so a still head leaves the
+    // sword centred. Scene clamps and maps to screen-space.
+    let deadzone: Float = 0.03
+    let x = abs(vector.x) < deadzone ? 0 : vector.x
+    let y = abs(vector.y) < deadzone ? 0 : vector.y
+    swordCommand = SIMD2<Float>(x, y)
   }
 
-  private func loseIfNeeded() {
+  // MARK: Scene → game callbacks
+
+  /// Player sliced a normal AI logo.
+  func didSliceLogo() {
+    let bonus = max(1, Int(activeModifier.scoreMultiplier.rounded()))
+    score += pointsPerLogo * bonus
+    slices += 1
+    sliceEventID += 1
+    lastSliceWasBomb = false
+    statusLine = "Sliced! \(slices) logos · \(score) pts"
+  }
+
+  /// Player sliced a rogue-AGI bomb (penalty).
+  func didSliceBomb() {
+    lives -= 1
+    sliceEventID += 1
+    lastSliceWasBomb = true
     if lives <= 0 {
       isFinished = true
-      statusLine = "Game over · score \(score)"
-      spawnTimer?.invalidate()
+      statusLine = "Sliced one too many bombs · final \(score)"
+    } else {
+      statusLine = "Bomb sliced! · \(lives) lives left"
     }
   }
 
-  private func scheduleSpawn() {
-    let interval = max(0.6, 2.0 / difficulty)
-    spawnTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-      Task { @MainActor [weak self] in
-        guard let self, !self.isFinished else { return }
-        // If previous fruit wasn't sliced in time, lose a life.
-        if let previous = self.currentFruit, Date() > previous.expiresAt {
-          if !previous.isBomb {
-            self.lives -= 1
-            self.statusLine = "Fruit escaped! \(self.lives) lives left"
-            self.loseIfNeeded()
-          }
-          self.publishOutcome(
-            direction: previous.direction, isBomb: previous.isBomb, kind: .expired)
-          self.currentFruit = nil
-        }
-        let dirs: [GestureDirection] = [.up, .down, .left, .right]
-        let dir = dirs.randomElement() ?? .up
-        let isBomb = Double.random(in: 0...1) < 0.15
-        self.currentFruit = Fruit(
-          direction: dir,
-          expiresAt: Date().addingTimeInterval(1.4),
-          isBomb: isBomb
-        )
-        self.statusLine =
-          isBomb
-          ? "BOMB from \(dir.rawValue) — do NOT flick!"
-          : "Fruit from \(dir.rawValue) — flick!"
-        self.difficulty += 0.05
-      }
+  /// A logo escaped off the bottom of the screen without being sliced.
+  func didMissLogo() {
+    lives -= 1
+    if lives <= 0 {
+      isFinished = true
+      statusLine = "Too many escaped · final \(score)"
+    } else {
+      statusLine = "Missed one · \(lives) lives left"
     }
   }
 }
