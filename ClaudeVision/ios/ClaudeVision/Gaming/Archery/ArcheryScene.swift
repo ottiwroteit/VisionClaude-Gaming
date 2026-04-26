@@ -25,6 +25,9 @@ struct ArcheryScene: UIViewRepresentable {
     view.preferredFramesPerSecond = 60
     view.rendersContinuously = true
     view.autoenablesDefaultLighting = false
+    // Render-thread camera follow — tracker lerps the camera toward
+    // the in-flight arrow when one is set, otherwise glides home.
+    view.delegate = context.coordinator.cameraTracker
     return view
   }
 

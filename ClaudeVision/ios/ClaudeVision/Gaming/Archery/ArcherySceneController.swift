@@ -45,6 +45,14 @@ final class ArcherySceneController: NSObject {
   /// Nodes representing arrows already stuck in the target. Cleared on
   /// game reset; one new node added per fire().
   private var stuckArrowNodes: [SCNNode] = []
+  /// Render-thread camera follow. Owned by the controller, installed
+  /// as the SCNView's delegate by the SwiftUI wrapper. Built once the
+  /// camera node exists at the end of `buildScene`.
+  private(set) var cameraTracker: ArcheryCameraTracker!
+  /// Background task that clears the camera's follow target after the
+  /// arrow has flown + dwelled. Cancelled if a new arrow fires before
+  /// the previous one's dwell completes.
+  private var cameraReleaseTask: Task<Void, Never>?
 
   // MARK: Tunables
 
@@ -138,6 +146,10 @@ final class ArcherySceneController: NSObject {
     ambientLightNode = SCNNode()
     ambientLightNode.light = ambient
     root.addChildNode(ambientLightNode)
+
+    // Render-thread camera tracker — built last so it captures the
+    // final camera home position from the just-positioned cameraNode.
+    cameraTracker = ArcheryCameraTracker(cameraNode: cameraNode)
   }
 
   /// Builds a flat disc node at the given radius. Stacking these on
@@ -269,10 +281,24 @@ final class ArcherySceneController: NSObject {
     // Animate the stuck arrow forward to the landing point. Quick
     // linear flight (no gravity arc — keeps the read clean for a
     // gesture-driven shot).
+    let flightDuration: TimeInterval = 0.4
     let flight = SCNAction.move(
-      to: SCNVector3(landing.x, landing.y, targetZ + 0.05), duration: 0.4)
+      to: SCNVector3(landing.x, landing.y, targetZ + 0.05), duration: flightDuration)
     flight.timingMode = .easeOut
     stuck.runAction(flight)
+
+    // Camera follow — same pattern as the bowling scene's ball
+    // tracker. Tracker lerps the camera toward the in-flight arrow's
+    // position; we clear the follow target after flight + a dwell so
+    // the camera glides back to home.
+    cameraReleaseTask?.cancel()
+    cameraTracker.followNode = stuck
+    cameraReleaseTask = Task { @MainActor [weak self] in
+      // Flight + brief dwell on the impact point before pulling back.
+      try? await Task.sleep(nanoseconds: UInt64((flightDuration + 0.45) * 1_000_000_000))
+      guard !Task.isCancelled else { return }
+      self?.cameraTracker.followNode = nil
+    }
   }
 
   private func landingPosition(forScore score: Int) -> (x: Float, y: Float) {

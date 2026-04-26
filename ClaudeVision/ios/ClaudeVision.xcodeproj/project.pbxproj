@@ -11,6 +11,7 @@
 		04A095977CA356A7BD617DCA /* PingPongGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66490A5375027C18E299220F /* PingPongGame.swift */; };
 		09C3BDFBC800407EF7773E69 /* BowlingCameraTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720B4F07C5BE76B40BAB3F2A /* BowlingCameraTracker.swift */; };
 		0B0D43D05DD7AA9061DBBC52 /* MWDATCore in Frameworks */ = {isa = PBXBuildFile; productRef = 56D471E4C1D0316E974B9E9D /* MWDATCore */; };
+		0D2A830E5C25C154221072C0 /* ArcheryCameraTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34B25D00B0A385DC428734F5 /* ArcheryCameraTracker.swift */; };
 		26DF4D6AB4300A244E2F9993 /* MWDATCamera in Frameworks */ = {isa = PBXBuildFile; productRef = F89EE55D2F5EFD824C5EAAA1 /* MWDATCamera */; };
 		2A77669B0885E5690DB0E5B9 /* GestureRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A8D0C3C3C22FDAC032A85DD /* GestureRecorder.swift */; };
 		2E15B4D77CEEF51A0D721B79 /* ShareCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF54E20B5EDB91B4B94884D /* ShareCardView.swift */; };
@@ -69,6 +70,7 @@
 		2CD39D9F07965ACDE648C66F /* FruitSlashVenues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FruitSlashVenues.swift; sourceTree = "<group>"; };
 		3015387732FC86391673FEFC /* MotionClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionClassifier.swift; sourceTree = "<group>"; };
 		338D3A61463B9D86479B4AF9 /* ArcheryScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcheryScene.swift; sourceTree = "<group>"; };
+		34B25D00B0A385DC428734F5 /* ArcheryCameraTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcheryCameraTracker.swift; sourceTree = "<group>"; };
 		35631D67CD4D879B5B42A10A /* BoxingVenues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoxingVenues.swift; sourceTree = "<group>"; };
 		3B937D3B1565BD030D47B9DE /* Game.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Game.swift; sourceTree = "<group>"; };
 		3DF4D40126DEF5014F50E67F /* GlassesSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassesSetupView.swift; sourceTree = "<group>"; };
@@ -165,6 +167,7 @@
 		2DEDDC806B23DCC35E73B511 /* Archery */ = {
 			isa = PBXGroup;
 			children = (
+				34B25D00B0A385DC428734F5 /* ArcheryCameraTracker.swift */,
 				338D3A61463B9D86479B4AF9 /* ArcheryScene.swift */,
 				B506CAC706E1CEFF3DAD22B7 /* ArcherySceneController.swift */,
 				049E50C040D2E192EEEB3501 /* ArcherySceneTheme.swift */,
@@ -343,6 +346,7 @@
 			files = (
 				AA89115CB629A0F228706FC9 /* AnimeStyle.swift in Sources */,
 				8DEA96294AD4A1C68EBF910E /* AppIconManager.swift in Sources */,
+				0D2A830E5C25C154221072C0 /* ArcheryCameraTracker.swift in Sources */,
 				EF22011091DAB224D43F0D0F /* ArcheryGame.swift in Sources */,
 				784D9EDE191D16EC1C28A3D6 /* ArcheryScene.swift in Sources */,
 				957EEBB0445C22441B647AE0 /* ArcherySceneController.swift in Sources */,
