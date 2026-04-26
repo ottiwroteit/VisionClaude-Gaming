@@ -75,6 +75,7 @@ enum VenueLibrary {
     case "fruitslash": return FruitSlashVenues.all
     case "jamario": return JamarioVenues.all
     case "jamariostreets": return JamarioStreetsVenues.all
+    case "firefox": return FirefoxVenues.all
     default: return []
     }
   }

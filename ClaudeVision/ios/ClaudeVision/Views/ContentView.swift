@@ -107,6 +107,7 @@ struct ContentView: View {
     coordinator.register(FruitSlashGame())
     coordinator.register(JamarioGame())
     coordinator.register(JamarioStreetsGame())
+    coordinator.register(FirefoxGame())
     coordinator.attach(frames: rayBan.$latestImage)
   }
 }

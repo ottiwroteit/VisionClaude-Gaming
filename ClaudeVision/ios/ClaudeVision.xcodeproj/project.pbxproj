@@ -22,6 +22,7 @@
 		2E15B4D77CEEF51A0D721B79 /* ShareCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF54E20B5EDB91B4B94884D /* ShareCardView.swift */; };
 		2F08588A0FA5377BED01C1DB /* FrameSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 704D8A46187AD105F8BE0E3F /* FrameSource.swift */; };
 		31583FD9A5085861FD73CEF4 /* TennisVenues.swift in Sources */ = {isa = PBXBuildFile; fileRef = F834FD6E9D77D33AC1F4DFAC /* TennisVenues.swift */; };
+		3D5B933002D530179E096BBC /* FirefoxSceneController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B23BC76C39E36864D05051B1 /* FirefoxSceneController.swift */; };
 		3F6F0FE0DACC7F7AAE94194A /* FruitSlashVenues.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CD39D9F07965ACDE648C66F /* FruitSlashVenues.swift */; };
 		3FDF7F0AAA360B8773806769 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6CC34BA60D99796648D08667 /* Preview Assets.xcassets */; };
 		51FE97FB0700AABB8F858703 /* BowlingScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6453D2CFFB0F8358DE9E95E0 /* BowlingScene.swift */; };
@@ -41,6 +42,7 @@
 		737117D22731300CAEC85436 /* PingPongSceneTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5423EB84DFAE1035F99839F9 /* PingPongSceneTheme.swift */; };
 		784D9EDE191D16EC1C28A3D6 /* ArcheryScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 338D3A61463B9D86479B4AF9 /* ArcheryScene.swift */; };
 		7B9EB5C35AA99FFC8E91F8B2 /* RayBanManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0160BE25F91F5DE8B717653 /* RayBanManager.swift */; };
+		7DA0AB8BF19D2EBAA6426C7F /* FirefoxVenues.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB4348CD053A448942FC6213 /* FirefoxVenues.swift */; };
 		8734E2624EAD7162EE5DE1A2 /* GameAudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 871B5E6A2DC77E6CDF6F63B3 /* GameAudio.swift */; };
 		8AF41AF815A9B9DBF79324E1 /* ProgressStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A761184267980942BC955F3 /* ProgressStore.swift */; };
 		8DEA96294AD4A1C68EBF910E /* AppIconManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A76A878AABFBA740BC142E /* AppIconManager.swift */; };
@@ -59,6 +61,7 @@
 		B16E22E3D5635B45CDA5527E /* UnlockCelebration.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED14DBCA12F0F32259D59338 /* UnlockCelebration.swift */; };
 		B347D456F940DB0B3EC5A4B3 /* JamarioGameScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DBA2DA31D77C37256849CF /* JamarioGameScene.swift */; };
 		B6F2120AB8FF095ADAF37B4B /* JamarioStreetsScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9967FCBA18DB0110E8843E2F /* JamarioStreetsScene.swift */; };
+		B72E294D23293A741A386577 /* FirefoxSceneTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A8A14C7C8A8A999A223F9F6 /* FirefoxSceneTheme.swift */; };
 		BB77BEBD9342F20CF03D3E17 /* GestureEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D6586F110D7EC927F2A34C2 /* GestureEvent.swift */; };
 		BCDAFA72AF218AB47F3E0CB8 /* BowlingSceneController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AC42963AADF2B0A8A5AC60C /* BowlingSceneController.swift */; };
 		BD186EB89777AC5DDA29BC9F /* ArcherySceneTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 049E50C040D2E192EEEB3501 /* ArcherySceneTheme.swift */; };
@@ -80,11 +83,14 @@
 		F72AA7EF417E1CAAE1A03C07 /* LaunchSplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53FCA12547DBC44C1F0AD38 /* LaunchSplashView.swift */; };
 		FCE3D75CC394FD3CAFFB827B /* VenueSelectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D66084323CBDF0F0A6D269F1 /* VenueSelectView.swift */; };
 		FDC4BE72E2046DB10FDF48D3 /* JamarioGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDE5D1F690BCE1711D38FC8A /* JamarioGame.swift */; };
+		FE1B8BD8158C44A8233C7292 /* FirefoxGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = A66E4598C67C88CA5E384E5A /* FirefoxGame.swift */; };
+		FE8FD5B87871130E9F107F97 /* FirefoxScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38FB62E0BDA3AD3A08F2F314 /* FirefoxScene.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		005CB362591CEF82F976089D /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		049E50C040D2E192EEEB3501 /* ArcherySceneTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcherySceneTheme.swift; sourceTree = "<group>"; };
+		0A8A14C7C8A8A999A223F9F6 /* FirefoxSceneTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirefoxSceneTheme.swift; sourceTree = "<group>"; };
 		0D99EBB5360A4830812A4A16 /* BowlingVenues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BowlingVenues.swift; sourceTree = "<group>"; };
 		0EBA2331D4EFFFADA46E6B38 /* GameCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCoordinator.swift; sourceTree = "<group>"; };
 		0FF0506A15276F33DBDC1C22 /* GestureEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GestureEngine.swift; sourceTree = "<group>"; };
@@ -94,6 +100,7 @@
 		34B25D00B0A385DC428734F5 /* ArcheryCameraTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcheryCameraTracker.swift; sourceTree = "<group>"; };
 		35631D67CD4D879B5B42A10A /* BoxingVenues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoxingVenues.swift; sourceTree = "<group>"; };
 		372DD112A6E7F3307A757556 /* TennisScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TennisScene.swift; sourceTree = "<group>"; };
+		38FB62E0BDA3AD3A08F2F314 /* FirefoxScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirefoxScene.swift; sourceTree = "<group>"; };
 		3B937D3B1565BD030D47B9DE /* Game.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Game.swift; sourceTree = "<group>"; };
 		3DF4D40126DEF5014F50E67F /* GlassesSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassesSetupView.swift; sourceTree = "<group>"; };
 		3F0D7111559988CE71483192 /* FruitSlashGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FruitSlashGame.swift; sourceTree = "<group>"; };
@@ -128,10 +135,12 @@
 		A0AACC052C5B3B85A599088E /* ArcheryVenues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcheryVenues.swift; sourceTree = "<group>"; };
 		A3DBA2DA31D77C37256849CF /* JamarioGameScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JamarioGameScene.swift; sourceTree = "<group>"; };
 		A53FCA12547DBC44C1F0AD38 /* LaunchSplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchSplashView.swift; sourceTree = "<group>"; };
+		A66E4598C67C88CA5E384E5A /* FirefoxGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirefoxGame.swift; sourceTree = "<group>"; };
 		AA383D3AF2B7F2F9017E42D7 /* TennisGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TennisGame.swift; sourceTree = "<group>"; };
 		AC324F474253831B139CE101 /* BoxingScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoxingScene.swift; sourceTree = "<group>"; };
 		ADDEADF115E191D862A525DD /* FruitSlashSceneTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FruitSlashSceneTheme.swift; sourceTree = "<group>"; };
 		AFF54E20B5EDB91B4B94884D /* ShareCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardView.swift; sourceTree = "<group>"; };
+		B23BC76C39E36864D05051B1 /* FirefoxSceneController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirefoxSceneController.swift; sourceTree = "<group>"; };
 		B506CAC706E1CEFF3DAD22B7 /* ArcherySceneController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcherySceneController.swift; sourceTree = "<group>"; };
 		B87D4BDBF7240A26822E92B8 /* BowlingSceneTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BowlingSceneTheme.swift; sourceTree = "<group>"; };
 		BE4EAE7635BF07443ED44384 /* DailyChallenge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyChallenge.swift; sourceTree = "<group>"; };
@@ -147,6 +156,7 @@
 		DB1873986A1185D916CC7800 /* AnimeStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimeStyle.swift; sourceTree = "<group>"; };
 		E46D4CCBEF0DB21117597803 /* JamarioSceneTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JamarioSceneTheme.swift; sourceTree = "<group>"; };
 		EA86BD0B0649157D710DD66D /* FruitSlashSceneController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FruitSlashSceneController.swift; sourceTree = "<group>"; };
+		EB4348CD053A448942FC6213 /* FirefoxVenues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirefoxVenues.swift; sourceTree = "<group>"; };
 		EC9895547C430C02C8901979 /* JamarioVenues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JamarioVenues.swift; sourceTree = "<group>"; };
 		ED14DBCA12F0F32259D59338 /* UnlockCelebration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockCelebration.swift; sourceTree = "<group>"; };
 		ED4F43EA2E5A25E3D215A392 /* DebugPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugPanelView.swift; sourceTree = "<group>"; };
@@ -177,6 +187,7 @@
 				A0AACC052C5B3B85A599088E /* ArcheryVenues.swift */,
 				0D99EBB5360A4830812A4A16 /* BowlingVenues.swift */,
 				35631D67CD4D879B5B42A10A /* BoxingVenues.swift */,
+				EB4348CD053A448942FC6213 /* FirefoxVenues.swift */,
 				2CD39D9F07965ACDE648C66F /* FruitSlashVenues.swift */,
 				78F1B28D386567E7ADFA1137 /* JamarioStreetsVenues.swift */,
 				EC9895547C430C02C8901979 /* JamarioVenues.swift */,
@@ -193,6 +204,7 @@
 				7450C70EEB82980645E55B72 /* ArcheryGame.swift */,
 				D078BD3D9A597903F2CDACC3 /* BowlingGame.swift */,
 				55B7BB9F20AE5B6C16405918 /* BoxingGame.swift */,
+				A66E4598C67C88CA5E384E5A /* FirefoxGame.swift */,
 				3F0D7111559988CE71483192 /* FruitSlashGame.swift */,
 				CDE5D1F690BCE1711D38FC8A /* JamarioGame.swift */,
 				42D6B3ED90152C385584A61E /* JamarioStreetsGame.swift */,
@@ -256,6 +268,7 @@
 				2DEDDC806B23DCC35E73B511 /* Archery */,
 				31237308340DA3B496BA69AF /* Bowling */,
 				7788F4D550BAD3C07A4DC50B /* Boxing */,
+				940681E13E0AC6F5D24D23A5 /* Firefox */,
 				994091F2CF8765C5848315EE /* FruitSlash */,
 				1380B471AEF9EE8643947E06 /* Games */,
 				2484B2B71BA72AF3D4493FD6 /* Jamario */,
@@ -297,6 +310,16 @@
 				5423EB84DFAE1035F99839F9 /* PingPongSceneTheme.swift */,
 			);
 			path = PingPong;
+			sourceTree = "<group>";
+		};
+		940681E13E0AC6F5D24D23A5 /* Firefox */ = {
+			isa = PBXGroup;
+			children = (
+				38FB62E0BDA3AD3A08F2F314 /* FirefoxScene.swift */,
+				B23BC76C39E36864D05051B1 /* FirefoxSceneController.swift */,
+				0A8A14C7C8A8A999A223F9F6 /* FirefoxSceneTheme.swift */,
+			);
+			path = Firefox;
 			sourceTree = "<group>";
 		};
 		954913A80229FAA275E99FD1 /* Views */ = {
@@ -480,6 +503,11 @@
 				ABE4642C648FF01E3FA76550 /* DailyChallenge.swift in Sources */,
 				CA00303E3F2897D249C97617 /* DailyChallengeCard.swift in Sources */,
 				C327AE4F92F9EF84D41BDA91 /* DebugPanelView.swift in Sources */,
+				FE1B8BD8158C44A8233C7292 /* FirefoxGame.swift in Sources */,
+				FE8FD5B87871130E9F107F97 /* FirefoxScene.swift in Sources */,
+				3D5B933002D530179E096BBC /* FirefoxSceneController.swift in Sources */,
+				B72E294D23293A741A386577 /* FirefoxSceneTheme.swift in Sources */,
+				7DA0AB8BF19D2EBAA6426C7F /* FirefoxVenues.swift in Sources */,
 				2F08588A0FA5377BED01C1DB /* FrameSource.swift in Sources */,
 				61AA0197E1DCB80E5534BF3D /* FruitSlashGame.swift in Sources */,
 				1272D61A4438E3E1FAA4141B /* FruitSlashScene.swift in Sources */,
