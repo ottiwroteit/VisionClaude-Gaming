@@ -55,6 +55,9 @@ npm-debug.log*
 *.swo
 *~
 
+# Claude Code worktrees (git-internal, not source)
+.claude/worktrees/
+
 # TypeScript
 *.tsbuildinfo
 
