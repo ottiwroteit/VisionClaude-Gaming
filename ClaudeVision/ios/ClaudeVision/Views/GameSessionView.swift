@@ -494,7 +494,21 @@ private struct BowlingArt: View {
           .allowsHitTesting(false)
         }
       }
-      .frame(height: 240)
+      // Pre-rotation height is intentionally taller than the visible
+      // 240pt slot so that after the 3D tilt, the lane still fills the
+      // frame while the back end recedes convincingly.
+      .frame(height: 320)
+      // Tilt the entire lane plane backward — bottom (player end)
+      // stays in place, top (pins) recedes into the distance, like
+      // looking down a real bowling alley.
+      .rotation3DEffect(
+        .degrees(-32),
+        axis: (1, 0, 0),
+        anchor: .bottom,
+        anchorZ: 0,
+        perspective: 0.85
+      )
+      .frame(height: 260)  // visible slot after the tilt foreshortens it
       .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.medium))
       .offset(x: shakeOffset.width, y: shakeOffset.height)
       .onChange(of: game.rollNumber) { _, _ in
