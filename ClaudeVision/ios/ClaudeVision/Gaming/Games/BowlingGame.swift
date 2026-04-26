@@ -29,10 +29,16 @@ final class BowlingGame: ObservableObject, Game {
   /// well below the default (0.012) so a soft chin-tilt registers, and
   /// keep flickMaxDuration long enough that even a slow, deliberate
   /// motion still classifies as a flick rather than a swing.
+  ///
+  /// `maxGestureDuration` is dropped to 0.6s because the very low
+  /// activeThreshold (0.005) caused the classifier to wait 1–2s for
+  /// post-flick head settling to fall below the floor before emitting
+  /// — that delay was the "ball releases a few seconds late" bug.
   var preferredThresholds: MotionClassifier.Thresholds? {
     var t = MotionClassifier.Thresholds()
     t.activeThreshold = 0.005
     t.flickMaxDuration = 0.5
+    t.maxGestureDuration = 0.6
     return t
   }
 

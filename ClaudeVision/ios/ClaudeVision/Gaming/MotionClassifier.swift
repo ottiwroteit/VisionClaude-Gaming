@@ -23,6 +23,14 @@ final class MotionClassifier {
     var minHoldDuration: TimeInterval = 0.4
     /// Ignore motion axes smaller than this fraction of the dominant axis.
     var axisDominance: Float = 1.6
+    /// Hard ceiling on a single gesture's active duration. Once a
+    /// gesture has been open this long, the classifier force-closes it
+    /// on the next sample regardless of whether motion has dropped
+    /// below `activeThreshold`. Prevents post-flick head-settling
+    /// micromotion from holding the gesture open and delaying the
+    /// emitted event by 1–2 seconds. Games with low active thresholds
+    /// (bowling) should override this to a tighter value.
+    var maxGestureDuration: TimeInterval = 1.5
   }
 
   private(set) var thresholds = Thresholds()
@@ -59,6 +67,20 @@ final class MotionClassifier {
       peakVelocity = max(peakVelocity, speed)
       if gestureSamples.count < 240 {
         gestureSamples.append(sample.vector)
+      }
+      // Force-close once the gesture has been open longer than its
+      // ceiling — the user's intentional motion is captured in
+      // `accumulated` / `peakVelocity` already, so we can emit now
+      // even though motion hasn't yet dipped below the active floor.
+      if let start = activeStart,
+        sample.timestamp.timeIntervalSince(start) >= thresholds.maxGestureDuration,
+        simd_length(accumulated) >= thresholds.activeThreshold
+      {
+        let duration = sample.timestamp.timeIntervalSince(start)
+        activeStart = nil
+        let event = makeEvent(duration: duration, at: sample.timestamp)
+        gestureSamples.removeAll(keepingCapacity: true)
+        return event
       }
       return nil
     }
