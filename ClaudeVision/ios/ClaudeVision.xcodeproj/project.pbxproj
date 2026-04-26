@@ -13,6 +13,7 @@
 		09C3BDFBC800407EF7773E69 /* BowlingCameraTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720B4F07C5BE76B40BAB3F2A /* BowlingCameraTracker.swift */; };
 		0B0D43D05DD7AA9061DBBC52 /* MWDATCore in Frameworks */ = {isa = PBXBuildFile; productRef = 56D471E4C1D0316E974B9E9D /* MWDATCore */; };
 		0D2A830E5C25C154221072C0 /* ArcheryCameraTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34B25D00B0A385DC428734F5 /* ArcheryCameraTracker.swift */; };
+		1272D61A4438E3E1FAA4141B /* FruitSlashScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED91DFCFEE47918D4702E3F3 /* FruitSlashScene.swift */; };
 		19D951B9E8881B11921B8436 /* BoxingSceneController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DAC8144075946D7C6E90CD7 /* BoxingSceneController.swift */; };
 		245590573688511C4894D87C /* BoxingSceneTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = F13C79F9619D6ACADF105E25 /* BoxingSceneTheme.swift */; };
 		26DF4D6AB4300A244E2F9993 /* MWDATCamera in Frameworks */ = {isa = PBXBuildFile; productRef = F89EE55D2F5EFD824C5EAAA1 /* MWDATCamera */; };
@@ -24,6 +25,8 @@
 		3FDF7F0AAA360B8773806769 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6CC34BA60D99796648D08667 /* Preview Assets.xcassets */; };
 		51FE97FB0700AABB8F858703 /* BowlingScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6453D2CFFB0F8358DE9E95E0 /* BowlingScene.swift */; };
 		55B34005F5174962FB930C93 /* PingPongVenues.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7AD775A1FBBCB1AA720652C /* PingPongVenues.swift */; };
+		562D4166974B9C79B11BFFD5 /* FruitSlashSceneTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADDEADF115E191D862A525DD /* FruitSlashSceneTheme.swift */; };
+		5850E3B397B3B10042D13534 /* FruitSlashSceneController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA86BD0B0649157D710DD66D /* FruitSlashSceneController.swift */; };
 		5A4C630503D58FEBCA9730BE /* BowlingPinTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5915F977AA07A85391A894E2 /* BowlingPinTracker.swift */; };
 		5E1CD10EEF09F9EDC673581F /* BowlingGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = D078BD3D9A597903F2CDACC3 /* BowlingGame.swift */; };
 		61AA0197E1DCB80E5534BF3D /* FruitSlashGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F0D7111559988CE71483192 /* FruitSlashGame.swift */; };
@@ -103,6 +106,7 @@
 		A53FCA12547DBC44C1F0AD38 /* LaunchSplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchSplashView.swift; sourceTree = "<group>"; };
 		AA383D3AF2B7F2F9017E42D7 /* TennisGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TennisGame.swift; sourceTree = "<group>"; };
 		AC324F474253831B139CE101 /* BoxingScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoxingScene.swift; sourceTree = "<group>"; };
+		ADDEADF115E191D862A525DD /* FruitSlashSceneTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FruitSlashSceneTheme.swift; sourceTree = "<group>"; };
 		AFF54E20B5EDB91B4B94884D /* ShareCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardView.swift; sourceTree = "<group>"; };
 		B506CAC706E1CEFF3DAD22B7 /* ArcherySceneController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcherySceneController.swift; sourceTree = "<group>"; };
 		B87D4BDBF7240A26822E92B8 /* BowlingSceneTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BowlingSceneTheme.swift; sourceTree = "<group>"; };
@@ -115,8 +119,10 @@
 		D66084323CBDF0F0A6D269F1 /* VenueSelectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenueSelectView.swift; sourceTree = "<group>"; };
 		D80B4A559F7D180D8DCE6033 /* ClaudeVisionApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeVisionApp.swift; sourceTree = "<group>"; };
 		DB1873986A1185D916CC7800 /* AnimeStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimeStyle.swift; sourceTree = "<group>"; };
+		EA86BD0B0649157D710DD66D /* FruitSlashSceneController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FruitSlashSceneController.swift; sourceTree = "<group>"; };
 		ED14DBCA12F0F32259D59338 /* UnlockCelebration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockCelebration.swift; sourceTree = "<group>"; };
 		ED4F43EA2E5A25E3D215A392 /* DebugPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugPanelView.swift; sourceTree = "<group>"; };
+		ED91DFCFEE47918D4702E3F3 /* FruitSlashScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FruitSlashScene.swift; sourceTree = "<group>"; };
 		F0160BE25F91F5DE8B717653 /* RayBanManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RayBanManager.swift; sourceTree = "<group>"; };
 		F13C79F9619D6ACADF105E25 /* BoxingSceneTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoxingSceneTheme.swift; sourceTree = "<group>"; };
 		F834FD6E9D77D33AC1F4DFAC /* TennisVenues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TennisVenues.swift; sourceTree = "<group>"; };
@@ -196,6 +202,7 @@
 				2DEDDC806B23DCC35E73B511 /* Archery */,
 				31237308340DA3B496BA69AF /* Bowling */,
 				7788F4D550BAD3C07A4DC50B /* Boxing */,
+				994091F2CF8765C5848315EE /* FruitSlash */,
 				1380B471AEF9EE8643947E06 /* Games */,
 				0A9335D6E8C046FCCA08AE8D /* Venues */,
 			);
@@ -241,6 +248,16 @@
 				D66084323CBDF0F0A6D269F1 /* VenueSelectView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		994091F2CF8765C5848315EE /* FruitSlash */ = {
+			isa = PBXGroup;
+			children = (
+				ED91DFCFEE47918D4702E3F3 /* FruitSlashScene.swift */,
+				EA86BD0B0649157D710DD66D /* FruitSlashSceneController.swift */,
+				ADDEADF115E191D862A525DD /* FruitSlashSceneTheme.swift */,
+			);
+			path = FruitSlash;
 			sourceTree = "<group>";
 		};
 		A89D041F911DC9E0739EB6C0 /* Products */ = {
@@ -388,6 +405,9 @@
 				C327AE4F92F9EF84D41BDA91 /* DebugPanelView.swift in Sources */,
 				2F08588A0FA5377BED01C1DB /* FrameSource.swift in Sources */,
 				61AA0197E1DCB80E5534BF3D /* FruitSlashGame.swift in Sources */,
+				1272D61A4438E3E1FAA4141B /* FruitSlashScene.swift in Sources */,
+				5850E3B397B3B10042D13534 /* FruitSlashSceneController.swift in Sources */,
+				562D4166974B9C79B11BFFD5 /* FruitSlashSceneTheme.swift in Sources */,
 				3F6F0FE0DACC7F7AAE94194A /* FruitSlashVenues.swift in Sources */,
 				981E8AA608802E6E6A955FCF /* Game.swift in Sources */,
 				8734E2624EAD7162EE5DE1A2 /* GameAudio.swift in Sources */,

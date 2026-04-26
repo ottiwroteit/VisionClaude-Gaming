@@ -434,7 +434,10 @@ struct GameSessionView: View {
       if let g = game as? ArcheryGame {
         ArcheryScene(game: g, venueID: progress.currentVenue(for: g.id).id)
       }
-    case "fruitslash": if let g = game as? FruitSlashGame { FruitSlashArt(game: g) }
+    case "fruitslash":
+      if let g = game as? FruitSlashGame {
+        FruitSlashScene(game: g, venueID: progress.currentVenue(for: g.id).id)
+      }
     default: GenericArt(game: game)
     }
   }
