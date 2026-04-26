@@ -29,9 +29,12 @@
 		575254176078CCEA77498FCB /* PingPongScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 919B652B84C55889E674679F /* PingPongScene.swift */; };
 		5850E3B397B3B10042D13534 /* FruitSlashSceneController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA86BD0B0649157D710DD66D /* FruitSlashSceneController.swift */; };
 		5A4C630503D58FEBCA9730BE /* BowlingPinTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5915F977AA07A85391A894E2 /* BowlingPinTracker.swift */; };
+		5A609BA22E81BC0122CA7041 /* TennisSceneTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF714D588F286FE188F68CE0 /* TennisSceneTheme.swift */; };
+		5DF75E250395E1B498E80EE0 /* TennisSceneController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF4B9FBF85000A7FF9F84BFB /* TennisSceneController.swift */; };
 		5E1CD10EEF09F9EDC673581F /* BowlingGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = D078BD3D9A597903F2CDACC3 /* BowlingGame.swift */; };
 		61AA0197E1DCB80E5534BF3D /* FruitSlashGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F0D7111559988CE71483192 /* FruitSlashGame.swift */; };
 		6B262B3F0BA7ACE2B427736E /* GlassesSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DF4D40126DEF5014F50E67F /* GlassesSetupView.swift */; };
+		6FB5AE7BC1658D855B6ACEA1 /* TennisScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 372DD112A6E7F3307A757556 /* TennisScene.swift */; };
 		710F56F668098F31727F41B0 /* GestureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FF0506A15276F33DBDC1C22 /* GestureEngine.swift */; };
 		737117D22731300CAEC85436 /* PingPongSceneTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5423EB84DFAE1035F99839F9 /* PingPongSceneTheme.swift */; };
 		784D9EDE191D16EC1C28A3D6 /* ArcheryScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 338D3A61463B9D86479B4AF9 /* ArcheryScene.swift */; };
@@ -81,6 +84,7 @@
 		338D3A61463B9D86479B4AF9 /* ArcheryScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcheryScene.swift; sourceTree = "<group>"; };
 		34B25D00B0A385DC428734F5 /* ArcheryCameraTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcheryCameraTracker.swift; sourceTree = "<group>"; };
 		35631D67CD4D879B5B42A10A /* BoxingVenues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoxingVenues.swift; sourceTree = "<group>"; };
+		372DD112A6E7F3307A757556 /* TennisScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TennisScene.swift; sourceTree = "<group>"; };
 		3B937D3B1565BD030D47B9DE /* Game.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Game.swift; sourceTree = "<group>"; };
 		3DF4D40126DEF5014F50E67F /* GlassesSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassesSetupView.swift; sourceTree = "<group>"; };
 		3F0D7111559988CE71483192 /* FruitSlashGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FruitSlashGame.swift; sourceTree = "<group>"; };
@@ -117,6 +121,7 @@
 		B506CAC706E1CEFF3DAD22B7 /* ArcherySceneController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcherySceneController.swift; sourceTree = "<group>"; };
 		B87D4BDBF7240A26822E92B8 /* BowlingSceneTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BowlingSceneTheme.swift; sourceTree = "<group>"; };
 		BE4EAE7635BF07443ED44384 /* DailyChallenge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyChallenge.swift; sourceTree = "<group>"; };
+		BF4B9FBF85000A7FF9F84BFB /* TennisSceneController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TennisSceneController.swift; sourceTree = "<group>"; };
 		C7AD775A1FBBCB1AA720652C /* PingPongVenues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PingPongVenues.swift; sourceTree = "<group>"; };
 		C9A58FF9BA5C906542805585 /* Venue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Venue.swift; sourceTree = "<group>"; };
 		CBA81D3448D2E8D889210B60 /* DailyChallengeCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyChallengeCard.swift; sourceTree = "<group>"; };
@@ -129,6 +134,7 @@
 		ED14DBCA12F0F32259D59338 /* UnlockCelebration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockCelebration.swift; sourceTree = "<group>"; };
 		ED4F43EA2E5A25E3D215A392 /* DebugPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugPanelView.swift; sourceTree = "<group>"; };
 		ED91DFCFEE47918D4702E3F3 /* FruitSlashScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FruitSlashScene.swift; sourceTree = "<group>"; };
+		EF714D588F286FE188F68CE0 /* TennisSceneTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TennisSceneTheme.swift; sourceTree = "<group>"; };
 		F0160BE25F91F5DE8B717653 /* RayBanManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RayBanManager.swift; sourceTree = "<group>"; };
 		F13C79F9619D6ACADF105E25 /* BoxingSceneTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoxingSceneTheme.swift; sourceTree = "<group>"; };
 		F834FD6E9D77D33AC1F4DFAC /* TennisVenues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TennisVenues.swift; sourceTree = "<group>"; };
@@ -182,6 +188,16 @@
 			);
 			sourceTree = "<group>";
 		};
+		1D90D1BAF9E357310FEE0BF2 /* Tennis */ = {
+			isa = PBXGroup;
+			children = (
+				372DD112A6E7F3307A757556 /* TennisScene.swift */,
+				BF4B9FBF85000A7FF9F84BFB /* TennisSceneController.swift */,
+				EF714D588F286FE188F68CE0 /* TennisSceneTheme.swift */,
+			);
+			path = Tennis;
+			sourceTree = "<group>";
+		};
 		2DEDDC806B23DCC35E73B511 /* Archery */ = {
 			isa = PBXGroup;
 			children = (
@@ -211,6 +227,7 @@
 				994091F2CF8765C5848315EE /* FruitSlash */,
 				1380B471AEF9EE8643947E06 /* Games */,
 				91D29D72EFA8AC775C3A63F1 /* PingPong */,
+				1D90D1BAF9E357310FEE0BF2 /* Tennis */,
 				0A9335D6E8C046FCCA08AE8D /* Venues */,
 			);
 			path = Gaming;
@@ -446,6 +463,9 @@
 				7B9EB5C35AA99FFC8E91F8B2 /* RayBanManager.swift in Sources */,
 				2E15B4D77CEEF51A0D721B79 /* ShareCardView.swift in Sources */,
 				8F8F26658FBA4F72C682EA63 /* TennisGame.swift in Sources */,
+				6FB5AE7BC1658D855B6ACEA1 /* TennisScene.swift in Sources */,
+				5DF75E250395E1B498E80EE0 /* TennisSceneController.swift in Sources */,
+				5A609BA22E81BC0122CA7041 /* TennisSceneTheme.swift in Sources */,
 				31583FD9A5085861FD73CEF4 /* TennisVenues.swift in Sources */,
 				F1A52CF077F28868BE7DA1CD /* TestScenarios.swift in Sources */,
 				E12306D922984A6813198E0E /* Theme.swift in Sources */,
