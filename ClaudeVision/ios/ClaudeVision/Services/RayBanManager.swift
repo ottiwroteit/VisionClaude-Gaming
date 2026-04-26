@@ -103,7 +103,13 @@ class RayBanManager: NSObject, ObservableObject, FrameSource {
   // MARK: - FrameSource Implementation
 
   func start() throws {
-    guard !isRunning else { return }
+    print(
+      "[RayBan] start() invoked — isRunning=\(isRunning) isRegistered=\(isRegistered) regState=\(registrationState)"
+    )
+    guard !isRunning else {
+      print("[RayBan] start() bailed: already running")
+      return
+    }
 
     // Re-check registration state directly from SDK
     let currentState = Wearables.shared.registrationState
