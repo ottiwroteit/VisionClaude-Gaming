@@ -23,6 +23,10 @@ final class BowlingGame: ObservableObject, Game {
   @Published private(set) var ballInFrame: Int = 1
   @Published private(set) var pinsRemaining: Int = 10
   @Published private(set) var lastRoll: Int = 0
+  /// Monotonically increasing — bumps on every handle() call so the view
+  /// can trigger a fresh ball-roll animation even on back-to-back gutter
+  /// balls (where lastRoll wouldn't change).
+  @Published private(set) var rollNumber: Int = 0
   @Published private(set) var statusLine: String = "Frame 1 · Ready to bowl"
   @Published private(set) var isFinished: Bool = false
   var activeModifier: VenueModifier = .default
@@ -51,6 +55,7 @@ final class BowlingGame: ObservableObject, Game {
     let points = Int((Double(knocked) * activeModifier.scoreMultiplier).rounded())
     score += points
     lastRoll = knocked
+    rollNumber += 1
 
     let strike = ballInFrame == 1 && knocked == 10
     let spare = ballInFrame == 2 && pinsRemaining == 0
