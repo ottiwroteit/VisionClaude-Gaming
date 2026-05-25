@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=600, height=600, initial-scale=1.0, user-scalable=no" />
+    <title>Meta Bowling — VisionClaude</title>
+    <link rel="stylesheet" href="../shared/design-tokens.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main id="app">
+      <!-- Title / start screen -->
+      <section id="screen-title" class="screen">
+        <h1 class="title">
+          <span class="title-accent">META</span><br />
+          <span class="title-main">BOWLING</span>
+        </h1>
+        <p class="subtitle">Roll 10 frames · Aim · Curve · Power · Bowl</p>
+        <div class="menu">
+          <button class="focusable primary" data-action="start-game">START</button>
+          <button class="focusable" data-action="show-howto">HOW TO PLAY</button>
+        </div>
+      </section>
+
+      <!-- How-to overlay -->
+      <section id="screen-howto" class="screen hidden">
+        <h2 class="screen-title">HOW TO PLAY</h2>
+        <ul class="howto">
+          <li><kbd>◄ ►</kbd> Aim left / right</li>
+          <li><kbd>▲ ▼</kbd> Curve hook / slice</li>
+          <li><kbd>Enter</kbd> Lock aim → start power meter</li>
+          <li><kbd>Enter</kbd> again → release the ball</li>
+          <li>10 frames, USBC scoring. Three strikes = TURKEY 🔥</li>
+        </ul>
+        <button class="focusable primary" data-action="back-to-title">BACK</button>
+      </section>
+
+      <!-- Gameplay -->
+      <section id="screen-game" class="screen hidden">
+        <header class="hud">
+          <div class="hud-frame">
+            FRAME <span id="hud-frame-num">1</span>
+            · BALL <span id="hud-ball-num">1</span>
+          </div>
+          <div class="hud-score">
+            <span id="hud-score-label">SCORE</span>
+            <span id="hud-score-value">0</span>
+          </div>
+        </header>
+
+        <canvas id="lane" width="600" height="440"></canvas>
+
+        <footer class="status">
+          <div id="status-line">Move ◄ ► to aim, ▲ ▼ for curve. Enter to release.</div>
+          <div class="meters">
+            <div class="meter" id="meter-aim">
+              <span class="meter-label">AIM</span>
+              <div class="meter-bar"><div class="meter-fill" id="meter-aim-fill"></div></div>
+            </div>
+            <div class="meter" id="meter-curve">
+              <span class="meter-label">CURVE</span>
+              <div class="meter-bar"><div class="meter-fill" id="meter-curve-fill"></div></div>
+            </div>
+            <div class="meter" id="meter-power">
+              <span class="meter-label">PWR</span>
+              <div class="meter-bar"><div class="meter-fill" id="meter-power-fill"></div></div>
+            </div>
+          </div>
+        </footer>
+      </section>
+
+      <!-- Scoreboard / game-over -->
+      <section id="screen-final" class="screen hidden">
+        <h2 class="screen-title">FINAL SCORE</h2>
+        <div id="final-score" class="final-score">0</div>
+        <div id="scoreboard" class="scoreboard"></div>
+        <div class="menu">
+          <button class="focusable primary" data-action="play-again">PLAY AGAIN</button>
+          <button class="focusable" data-action="back-to-title">MAIN MENU</button>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

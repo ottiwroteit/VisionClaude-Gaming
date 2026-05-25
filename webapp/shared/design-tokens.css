@@ -1,0 +1,100 @@
+/*
+ * VisionClaude design tokens for Meta Display webapps.
+ *
+ * The Meta Display is an ADDITIVE TRANSPARENT screen — pure black renders
+ * as the real world showing through. So our backgrounds are dark, and our
+ * foreground colors must be bright and saturated to read clearly.
+ *
+ * Use these tokens for every color/typography/spacing choice. Don't
+ * hardcode hex values in game styles.
+ */
+
+:root {
+  /* ---- Surfaces (these read as TRANSPARENT-ish on the glasses) ---- */
+  --bg-void: #000000;            /* Pure black = fully transparent on display */
+  --bg-dim: #050510;             /* Used for game-area backdrop */
+  --bg-panel: #0a0a18;           /* Score panel, modals */
+
+  /* ---- Accent palette (these read as BRIGHT on the glasses) ---- */
+  --accent-cyan: #00e5ff;        /* Primary UI */
+  --accent-magenta: #ff3ec9;     /* The bowling ball, alerts */
+  --accent-green: #00ff88;       /* Success, strike, score increments */
+  --accent-amber: #ffb800;       /* Power meter, warnings */
+  --accent-red: #ff3344;         /* Gutter, miss */
+  --accent-white: #ffffff;       /* Pins, primary text */
+
+  /* ---- Focus / interaction (port of Meta Snake example pattern) ---- */
+  --focus-ring: var(--accent-cyan);
+  --focus-glow: rgba(0, 229, 255, 0.55);
+
+  /* ---- Typography ---- */
+  --font-mono: ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
+  --font-display: "Inter", system-ui, -apple-system, sans-serif;
+
+  /* On a 600px viewport these scale needs to feel large.
+     Equivalents to "huge / large / regular / small / tiny" for readability. */
+  --type-huge: 56px;
+  --type-large: 36px;
+  --type-regular: 22px;
+  --type-small: 16px;
+  --type-tiny: 12px;
+
+  /* ---- Spacing scale ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* ---- Radii ---- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+}
+
+/* ---- Global reset specifically for the 600x600 fixed viewport ---- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 600px;
+  height: 600px;
+  overflow: hidden;
+  background: var(--bg-void);
+  color: var(--accent-white);
+  font-family: var(--font-display);
+  font-size: var(--type-regular);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ---- Focusable element convention (Meta Display D-pad navigation) ----
+ * Any interactive element gets the .focusable class. The shared focus.js
+ * module manages tab order through these.
+ */
+.focusable {
+  outline: none;
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  transition: all 120ms ease;
+  cursor: pointer;
+}
+
+.focusable:focus,
+.focusable.is-focused {
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 20px var(--focus-glow);
+}
+
+/* ---- Hide default browser focus ring in favor of our themed one ---- */
+:focus {
+  outline: none;
+}

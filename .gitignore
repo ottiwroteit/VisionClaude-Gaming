@@ -58,6 +58,10 @@ npm-debug.log*
 # Claude Code worktrees (git-internal, not source)
 .claude/worktrees/
 
+# Playwright MCP test artifacts
+.playwright-mcp/
+bowling-*.png
+
 # TypeScript
 *.tsbuildinfo
 

@@ -1,0 +1,11 @@
+{
+  "name": "visionclaude-bowling",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Meta Display webapp port of Meta Bowling from VisionClaude Gaming.",
+  "scripts": {
+    "test": "node --test test/scoring.test.js",
+    "serve": "python3 -m http.server 8000"
+  }
+}
