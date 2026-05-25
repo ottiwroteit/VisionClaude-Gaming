@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VisionClaude — Games for Meta Ray-Ban Display</title>
+    <style>
+      :root {
+        --bg: #050510;
+        --panel: #0a0a18;
+        --cyan: #00e5ff;
+        --white: #ffffff;
+        --muted: #8aa0b4;
+        --magenta: #ff3ec9;
+        --green: #00ff88;
+        --amber: #ffb800;
+        --error: #ff3344;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body {
+        background: var(--bg);
+        color: var(--white);
+        font-family: ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 56px 24px 96px;
+      }
+      .brand {
+        font-size: 12px;
+        color: var(--cyan);
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-size: clamp(40px, 8vw, 68px);
+        line-height: 1.0;
+        letter-spacing: 0.03em;
+        margin-bottom: 20px;
+      }
+      h1 .accent {
+        color: var(--cyan);
+        text-shadow: 0 0 24px rgba(0, 229, 255, 0.5);
+      }
+      .lead {
+        font-family: "Inter", system-ui, sans-serif;
+        font-size: 17px;
+        line-height: 1.55;
+        color: var(--muted);
+        max-width: 560px;
+        margin-bottom: 44px;
+      }
+      .lead strong { color: var(--white); }
+
+      /* ===== Share-code entry card ===== */
+      .code-card {
+        background: var(--panel);
+        border: 1px solid rgba(0, 229, 255, 0.3);
+        border-radius: 18px;
+        padding: 28px;
+        margin-bottom: 28px;
+      }
+      .code-card h2 {
+        font-size: 13px;
+        color: var(--cyan);
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+      }
+      .code-card .sub {
+        font-family: "Inter", system-ui, sans-serif;
+        font-size: 15px;
+        color: var(--muted);
+        margin-bottom: 20px;
+      }
+      .code-form {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .code-input {
+        flex: 1 1 240px;
+        background: rgba(0, 229, 255, 0.06);
+        border: 2px solid rgba(0, 229, 255, 0.4);
+        color: var(--white);
+        font-family: ui-monospace, monospace;
+        font-size: 28px;
+        letter-spacing: 0.3em;
+        text-align: center;
+        padding: 14px 16px;
+        border-radius: 12px;
+        outline: none;
+        transition: border-color 120ms ease, background 120ms ease;
+      }
+      .code-input::placeholder {
+        color: rgba(138, 160, 180, 0.5);
+        letter-spacing: 0.3em;
+      }
+      .code-input:focus {
+        border-color: var(--cyan);
+        background: rgba(0, 229, 255, 0.12);
+      }
+      .code-submit {
+        background: var(--cyan);
+        color: var(--bg);
+        border: none;
+        font-family: ui-monospace, monospace;
+        font-size: 15px;
+        letter-spacing: 0.18em;
+        padding: 16px 26px;
+        border-radius: 12px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: transform 80ms ease, background 80ms ease;
+      }
+      .code-submit:hover { transform: translateY(-1px); }
+      .code-submit:active { transform: translateY(0); background: rgba(0, 229, 255, 0.85); }
+      .code-error {
+        color: var(--error);
+        font-family: "Inter", system-ui, sans-serif;
+        font-size: 14px;
+        margin-top: 12px;
+        display: none;
+      }
+      .code-error.show { display: block; }
+
+      /* ===== Game cards ===== */
+      .section-label {
+        font-size: 12px;
+        color: var(--cyan);
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        margin: 32px 0 14px;
+      }
+      .games {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .game-card {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        text-decoration: none;
+        color: inherit;
+        background: var(--panel);
+        border: 1px solid rgba(0, 229, 255, 0.25);
+        border-radius: 14px;
+        padding: 20px 24px;
+        transition: border-color 120ms ease, transform 120ms ease;
+      }
+      .game-card:hover {
+        border-color: var(--cyan);
+        transform: translateX(4px);
+      }
+      .game-card .glyph { font-size: 36px; }
+      .game-card .meta { font-family: "Inter", system-ui, sans-serif; flex: 1; }
+      .game-card .title {
+        font-family: ui-monospace, monospace;
+        font-size: 17px;
+        color: var(--white);
+        letter-spacing: 0.06em;
+        margin-bottom: 3px;
+      }
+      .game-card .sub {
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+      .game-card .code {
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+        color: var(--amber);
+        letter-spacing: 0.15em;
+      }
+      .game-card .add {
+        font-family: ui-monospace, monospace;
+        font-size: 11px;
+        color: var(--cyan);
+        letter-spacing: 0.15em;
+        background: rgba(0, 229, 255, 0.12);
+        border: 1px solid var(--cyan);
+        padding: 8px 14px;
+        border-radius: 8px;
+        white-space: nowrap;
+      }
+
+      footer {
+        margin-top: 56px;
+        font-family: "Inter", system-ui, sans-serif;
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+      footer a { color: var(--cyan); }
+
+      @media (max-width: 480px) {
+        main { padding: 36px 18px 64px; }
+        h1 { font-size: 38px; }
+        .code-input { font-size: 22px; padding: 12px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="brand">VisionClaude · Meta Display Webapps</div>
+      <h1>Games, <span class="accent">on your glasses.</span></h1>
+      <p class="lead">
+        Native experiences for the <strong>Meta Ray-Ban Display</strong>.
+        Add a game to your glasses once and play any time. Share with friends
+        using the <strong>6-digit code</strong> shown on the game's title
+        screen — no QR cameras, no URL copying.
+      </p>
+
+      <section class="code-card">
+        <h2>Got a 6-digit code?</h2>
+        <div class="sub">Type the code a friend gave you — we'll add the game to your Meta Ray-Ban Display.</div>
+        <form id="code-form" class="code-form" autocomplete="off">
+          <input
+            id="code-input"
+            class="code-input"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            maxlength="6"
+            placeholder="• • • • • •"
+            aria-label="6-digit share code"
+          />
+          <button type="submit" class="code-submit">ADD TO GLASSES</button>
+        </form>
+        <div id="code-error" class="code-error">No game with that code yet. Double-check the digits.</div>
+      </section>
+
+      <div class="section-label">Or pick from this catalog</div>
+      <div id="games" class="games"></div>
+
+      <footer>
+        Built with the
+        <a href="https://wearables.developer.meta.com/docs/develop/webapps">Meta Display Webapps</a>
+        SDK · Source on
+        <a href="https://github.com/ottiwroteit/VisionClaude-Gaming">GitHub</a>.
+      </footer>
+    </main>
+
+    <script type="module">
+      import { GAMES, findByCode } from './manifest.js';
+
+      // ---- Render game catalog ----
+      const list = document.getElementById('games');
+      for (const g of GAMES) {
+        const a = document.createElement('a');
+        a.className = 'game-card';
+        a.href = `add/?code=${g.shareCode}`;
+        a.innerHTML = `
+          <span class="glyph">${g.emoji}</span>
+          <span class="meta">
+            <div class="title">${g.name.toUpperCase()}</div>
+            <div class="sub">${g.blurb}</div>
+            <div class="code">CODE ${g.shareCode}</div>
+          </span>
+          <span class="add">ADD ►</span>
+        `;
+        list.appendChild(a);
+      }
+
+      // ---- Handle 6-digit code submission ----
+      const form = document.getElementById('code-form');
+      const input = document.getElementById('code-input');
+      const err = document.getElementById('code-error');
+
+      // Auto-strip non-digits as the user types.
+      input.addEventListener('input', () => {
+        input.value = input.value.replace(/[^\d]/g, '').slice(0, 6);
+        err.classList.remove('show');
+      });
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const code = input.value.trim();
+        const game = findByCode(code);
+        if (!game) {
+          err.classList.add('show');
+          return;
+        }
+        location.href = `add/?code=${code}`;
+      });
+
+      // Allow ?code=XXXXXX in URL bar for direct deep-linking.
+      const params = new URLSearchParams(location.search);
+      const presetCode = params.get('code');
+      if (presetCode) {
+        input.value = presetCode;
+        form.dispatchEvent(new Event('submit'));
+      }
+    </script>
+  </body>
+</html>

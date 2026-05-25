@@ -316,3 +316,43 @@
   text-shadow: 0 0 50px rgba(255, 184, 0, 0.95);
   font-size: 56px;
 }
+
+/* ===== Share banner (title + final screen) ===== */
+
+.share-banner {
+  margin-top: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.share-banner-label {
+  font-family: var(--font-mono);
+  font-size: var(--type-tiny);
+  letter-spacing: 0.3em;
+  color: var(--accent-cyan);
+  opacity: 0.85;
+}
+
+.share-banner-code {
+  font-family: var(--font-mono);
+  font-size: 38px;
+  letter-spacing: 0.18em;
+  color: var(--accent-amber);
+  text-shadow: 0 0 22px rgba(255, 184, 0, 0.7);
+  font-weight: bold;
+}
+
+.share-banner-host {
+  font-family: var(--font-mono);
+  font-size: var(--type-small);
+  letter-spacing: 0.04em;
+  color: var(--accent-white);
+  opacity: 0.7;
+}
+
+.share-banner-compact .share-banner-code {
+  font-size: 24px;
+}
+

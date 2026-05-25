@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add to your Meta Ray-Ban Display</title>
+    <style>
+      :root {
+        --bg: #050510;
+        --panel: #0a0a18;
+        --cyan: #00e5ff;
+        --white: #ffffff;
+        --muted: #8aa0b4;
+        --green: #00ff88;
+        --amber: #ffb800;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body {
+        background: var(--bg);
+        color: var(--white);
+        font-family: ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+      }
+      main {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 48px 24px 96px;
+      }
+      a.back {
+        display: inline-block;
+        font-size: 12px;
+        color: var(--cyan);
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        text-decoration: none;
+        margin-bottom: 24px;
+      }
+      a.back:hover { color: var(--white); }
+
+      .game-header {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        margin-bottom: 12px;
+      }
+      .game-header .glyph { font-size: 56px; }
+      .game-header h1 {
+        font-size: 32px;
+        letter-spacing: 0.04em;
+        line-height: 1;
+      }
+      .blurb {
+        font-family: "Inter", system-ui, sans-serif;
+        font-size: 16px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .share-code {
+        font-family: ui-monospace, monospace;
+        font-size: 14px;
+        color: var(--amber);
+        letter-spacing: 0.25em;
+        margin-bottom: 36px;
+      }
+
+      /* ---- Add card (mobile button vs desktop QR) ---- */
+      .add-card {
+        background: var(--panel);
+        border: 1px solid rgba(0, 229, 255, 0.3);
+        border-radius: 18px;
+        padding: 32px;
+        margin-bottom: 24px;
+        text-align: center;
+      }
+
+      /* Mobile add button */
+      .mobile-add-btn {
+        display: inline-block;
+        background: var(--cyan);
+        color: var(--bg);
+        font-family: ui-monospace, monospace;
+        font-size: 18px;
+        letter-spacing: 0.15em;
+        font-weight: 600;
+        padding: 22px 36px;
+        border-radius: 14px;
+        text-decoration: none;
+        transition: transform 80ms ease;
+      }
+      .mobile-add-btn:active { transform: translateY(1px); }
+      .mobile-sub {
+        font-family: "Inter", system-ui, sans-serif;
+        font-size: 14px;
+        color: var(--muted);
+        margin-top: 18px;
+        line-height: 1.5;
+      }
+
+      /* Desktop QR */
+      .desktop-qr {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+      }
+      .desktop-qr .qr-frame {
+        background: var(--white);
+        padding: 14px;
+        border-radius: 12px;
+      }
+      .desktop-qr canvas {
+        display: block;
+        image-rendering: pixelated;
+      }
+      .desktop-qr p {
+        font-family: "Inter", system-ui, sans-serif;
+        font-size: 15px;
+        color: var(--white);
+        max-width: 320px;
+        line-height: 1.5;
+      }
+      .desktop-qr p span { color: var(--cyan); }
+
+      /* ---- Fallback / manual ---- */
+      .manual {
+        background: rgba(0, 229, 255, 0.06);
+        border: 1px solid rgba(0, 229, 255, 0.25);
+        border-radius: 14px;
+        padding: 20px;
+        margin-top: 16px;
+      }
+      .manual h3 {
+        font-size: 12px;
+        color: var(--cyan);
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+      }
+      .manual p {
+        font-family: "Inter", system-ui, sans-serif;
+        font-size: 14px;
+        color: var(--muted);
+        line-height: 1.55;
+        margin-bottom: 12px;
+      }
+      .url-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        background: var(--bg);
+        border: 1px solid rgba(0, 229, 255, 0.4);
+        border-radius: 8px;
+        padding: 10px 12px;
+      }
+      .url-row code {
+        flex: 1;
+        font-family: ui-monospace, monospace;
+        font-size: 13px;
+        color: var(--cyan);
+        word-break: break-all;
+      }
+      .copy-btn {
+        background: var(--cyan);
+        color: var(--bg);
+        border: none;
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        padding: 8px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .copy-btn.copied { background: var(--green); color: var(--bg); }
+
+      .play-link {
+        display: inline-block;
+        margin-top: 24px;
+        font-family: ui-monospace, monospace;
+        font-size: 13px;
+        color: var(--muted);
+        letter-spacing: 0.12em;
+        text-decoration: none;
+      }
+      .play-link:hover { color: var(--cyan); }
+
+      .error-state {
+        text-align: center;
+        padding: 60px 20px;
+      }
+      .error-state h1 { font-size: 28px; margin-bottom: 12px; color: var(--amber); }
+      .error-state p { font-family: "Inter", system-ui, sans-serif; color: var(--muted); margin-bottom: 24px; }
+      .error-state a {
+        display: inline-block;
+        background: var(--cyan);
+        color: var(--bg);
+        padding: 12px 22px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-size: 14px;
+        letter-spacing: 0.12em;
+      }
+
+      @media (max-width: 480px) {
+        main { padding: 32px 16px 64px; }
+        .game-header h1 { font-size: 26px; }
+        .game-header .glyph { font-size: 44px; }
+        .add-card { padding: 24px 18px; }
+        .mobile-add-btn { font-size: 16px; padding: 20px 28px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main id="content"></main>
+    <script type="module" src="add.js"></script>
+  </body>
+</html>
